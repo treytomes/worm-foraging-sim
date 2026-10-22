@@ -1,6 +1,9 @@
-﻿using System.Globalization;
+﻿using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using Prism.Commands;
+using System.Globalization;
 using WormForaging.App.Hosting;
+using WormForaging.Core;
 using WormForaging.Core.Rng;
 
 namespace WormForaging.App.ViewModels;
@@ -8,42 +11,288 @@ namespace WormForaging.App.ViewModels;
 /// <summary>
 /// View model for the main window.
 /// </summary>
-/// <remarks>
-/// For now it proves the host wiring end to end: it reports the resolved RNG seed and the first few
-/// draws from the injected <see cref="IRandom"/>, confirming that dependency injection,
-/// configuration, and the deterministic generator are all connected. It will grow into the
-/// simulation's control surface as the port proceeds.
-/// </remarks>
-public sealed class MainWindowViewModel : ViewModelBase
+public sealed class MainWindowViewModel : ViewModelBase, IDisposable
 {
-    private string _status;
+    #region Fields
+
+    private readonly SimConfig _config;
+    private readonly SimulationStartup _simulationStartup;
+    private readonly ILogger<MainWindowViewModel> _logger;
+    private Simulation _simulation;
+    private IRandom _random;
+    private DispatcherTimer _timer;
+    private bool _isRunning = true;
+    private int _speed = 8;
+    private double _exploreTemperature = 1.0;
+    private LearningMode _mode = LearningMode.Full;
+    private bool _homeostasisEnabled = true;
+    private SimulationSnapshot? _currentSnapshot;
+    private List<(double X, double Y)> _trail = new();
+    private string _statusText = string.Empty;
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
-    /// Initializes the view model from the injected services and records a short startup summary.
+    /// Initializes the view model from the injected services.
     /// </summary>
-    /// <param name="random">The deterministic generator for the active run.</param>
-    /// <param name="simulation">The resolved seed and where it came from.</param>
-    /// <param name="logger">Logger for startup diagnostics.</param>
-    public MainWindowViewModel(IRandom random, SimulationStartup simulation, ILogger<MainWindowViewModel> logger)
+    public MainWindowViewModel(
+        SimConfig config,
+        SimulationStartup simulationStartup,
+        IRandom random,
+        ILogger<MainWindowViewModel> logger
+    )
     {
-        double first = random.NextDouble();
-        double second = random.NextDouble();
-        double third = random.NextDouble();
+        _config = config ?? throw new ArgumentNullException(nameof(config));
+        _simulationStartup = simulationStartup ?? throw new ArgumentNullException(nameof(simulationStartup));
+        _random = random ?? throw new ArgumentNullException(nameof(random));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        _status = string.Format(
-            CultureInfo.InvariantCulture,
-            "Seed {0} (from {1}). First three draws: {2:F4}, {3:F4}, {4:F4}.",
-            simulation.Seed, simulation.Source, first, second, third);
+        _simulation = new Simulation(_config, new Pcg32Random(_simulationStartup.Seed));
+        _exploreTemperature = _simulation.ExploreTemperature;
+        _homeostasisEnabled = _simulation.HomeostasisEnabled;
+        _mode = _simulation.Mode;
 
-        logger.LogInformation("Main view model initialized. {Status}", _status);
+        ToggleRunCommand = new DelegateCommand(ToggleRun);
+        ResetCommand = new DelegateCommand(Reset);
+        SwapSensesCommand = new DelegateCommand(SwapSenses);
+
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _timer.Tick += OnTimerTick;
+        _timer.Start();
+
+        UpdateSnapshot();
+        _logger.LogInformation("Main view model initialized with seed {Seed} from {Source}", _simulationStartup.Seed, _simulationStartup.Source);
+    }
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets the command to toggle running state.
+    /// </summary>
+    public DelegateCommand ToggleRunCommand { get; }
+
+    /// <summary>
+    /// Gets the command to reset the simulation.
+    /// </summary>
+    public DelegateCommand ResetCommand { get; }
+
+    /// <summary>
+    /// Gets the command to swap senses.
+    /// </summary>
+    public DelegateCommand SwapSensesCommand { get; }
+
+    /// <summary>
+    /// Gets or sets whether the simulation is running.
+    /// </summary>
+    public bool IsRunning
+    {
+        get => _isRunning;
+        set
+        {
+            if (SetProperty(ref _isRunning, value))
+            {
+                RaisePropertyChanged(nameof(RunButtonText));
+            }
+        }
     }
 
     /// <summary>
-    /// A human-readable summary of the active seed and the generator's first draws.
+    /// Gets the text for the run/pause button.
     /// </summary>
-    public string Status
+    public string RunButtonText => IsRunning ? "Pause" : "Run";
+
+    /// <summary>
+    /// Gets or sets the simulation speed (steps per frame).
+    /// </summary>
+    public int Speed
     {
-        get => _status;
-        private set => SetProperty(ref _status, value);
+        get => _speed;
+        set => SetProperty(ref _speed, value);
     }
+
+    /// <summary>
+    /// Gets or sets the exploration temperature.
+    /// </summary>
+    public double ExploreTemperature
+    {
+        get => _exploreTemperature;
+        set
+        {
+            if (SetProperty(ref _exploreTemperature, value))
+            {
+                if (_simulation != null)
+                {
+                    _simulation.ExploreTemperature = value;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the learning mode index.
+    /// </summary>
+    public int ModeIndex
+    {
+        get => _mode switch
+        {
+            LearningMode.Full => 0,
+            LearningMode.Hebbian => 1,
+            LearningMode.Frozen => 2,
+            _ => 0
+        };
+        set
+        {
+            LearningMode newMode = value switch
+            {
+                0 => LearningMode.Full,
+                1 => LearningMode.Hebbian,
+                2 => LearningMode.Frozen,
+                _ => LearningMode.Full
+            };
+            if (SetProperty(ref _mode, newMode) && _simulation != null)
+            {
+                _simulation.Mode = newMode;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether homeostasis is enabled.
+    /// </summary>
+    public bool HomeostasisEnabled
+    {
+        get => _homeostasisEnabled;
+        set
+        {
+            if (SetProperty(ref _homeostasisEnabled, value))
+            {
+                if (_simulation != null)
+                {
+                    _simulation.HomeostasisEnabled = value;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the current simulation snapshot.
+    /// </summary>
+    public SimulationSnapshot? CurrentSnapshot
+    {
+        get => _currentSnapshot;
+        set => SetProperty(ref _currentSnapshot, value);
+    }
+
+    /// <summary>
+    /// Gets the worm trail.
+    /// </summary>
+    public IReadOnlyList<(double X, double Y)> Trail => _trail;
+
+    /// <summary>
+    /// Gets the status text.
+    /// </summary>
+    public string StatusText
+    {
+        get => _statusText;
+        set => SetProperty(ref _statusText, value);
+    }
+
+    #endregion
+
+    #region Methods
+
+    private void ToggleRun()
+    {
+        IsRunning = !IsRunning;
+    }
+
+    private void Reset()
+    {
+        _trail.Clear();
+
+        _random.Reset();
+        _simulation = new(_config, _random)
+        {
+            ExploreTemperature = _exploreTemperature,
+            HomeostasisEnabled = _homeostasisEnabled,
+            Mode = _mode
+        };
+        UpdateSnapshot();
+    }
+
+    private void SwapSenses()
+    {
+        _simulation?.SwapSenses();
+    }
+
+    private void OnTimerTick(object? sender, EventArgs e)
+    {
+        if (!IsRunning || _simulation == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < Speed; i++)
+        {
+            _simulation.Step();
+        }
+
+        UpdateTrail();
+        UpdateSnapshot();
+        RaisePropertyChanged(nameof(CurrentSnapshot));
+        RaisePropertyChanged(nameof(Trail));
+    }
+
+    private void UpdateTrail()
+    {
+        if (_simulation == null)
+        {
+            return;
+        }
+
+        var snap = _simulation.Snapshot();
+        _trail.Add((snap.WormX, snap.WormY));
+        if (_trail.Count > 60)
+        {
+            _trail.RemoveAt(0);
+        }
+        RaisePropertyChanged(nameof(Trail));
+    }
+
+    private void UpdateSnapshot()
+    {
+        if (_simulation == null)
+        {
+            return;
+        }
+
+        CurrentSnapshot = _simulation.Snapshot();
+        var snap = CurrentSnapshot;
+        if (snap != null)
+        {
+            var last5Avg = snap.MealIntervals.Count > 0
+                ? snap.MealIntervals.TakeLast(5).Average()
+                : 0;
+            StatusText = string.Format(
+                CultureInfo.InvariantCulture,
+                "meals {0} · last-5 avg {1} · energy {2:F2} · gut {3:F2} · body {4:F2}",
+                snap.MealsEaten,
+                snap.MealIntervals.Count > 0 ? last5Avg.ToString("F0", CultureInfo.InvariantCulture) : "–",
+                snap.Energy,
+                snap.Gut,
+                snap.BodyTemperature);
+        }
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _timer.Stop();
+    }
+
+    #endregion
 }

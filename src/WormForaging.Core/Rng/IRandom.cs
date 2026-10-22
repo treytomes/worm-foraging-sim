@@ -9,7 +9,7 @@ namespace WormForaging.Core.Rng;
 /// so that experiments on the learning rule can be compared across conditions rather than across
 /// lucky dice. Every stochastic path in the simulation — network initialization, action
 /// sampling, food and heat-lamp placement, exploration noise — draws from an <see cref="IRandom"/>
-/// rather than from an ambient <see cref="System.Random"/>. Nothing in <c>WormForaging.Core</c>
+/// rather than from an ambient <see cref="Random"/>. Nothing in <c>WormForaging.Core</c>
 /// is allowed to reach for the system clock or a global RNG.
 /// </para>
 /// <para>
@@ -20,6 +20,25 @@ namespace WormForaging.Core.Rng;
 /// </remarks>
 public interface IRandom
 {
+    /// <summary>
+    /// Reset the generator to its initial state.
+    /// </summary>
+    void Reset();
+
+    /// <summary>
+    /// Reset the generator to a new seed and optional sequence.
+    /// </summary>
+    /// <param name="seed">
+    /// The initial state seed. Any value is valid; a given seed fully determines the stream
+    /// (together with <paramref name="sequence"/>).
+    /// </param>
+    /// <param name="sequence">
+    /// Selects which of the 2^63 distinct streams to draw from. Two instances that share a
+    /// <paramref name="seed"/> but differ here produce independent sequences, which is useful for
+    /// giving separate simulation components their own uncorrelated randomness.
+    /// </param>
+    void Reseed(ulong seed, ulong sequence = 0);
+
     /// <summary>
     /// Returns the next uniformly distributed 32-bit unsigned value, covering the full range
     /// <c>[0, 2^32)</c>. This is the generator's primitive output; the other members are derived
@@ -40,7 +59,7 @@ public interface IRandom
     /// </summary>
     /// <param name="maxExclusive">The exclusive upper bound. Must be greater than zero.</param>
     /// <returns>A pseudo-random <see cref="int"/> in <c>[0, <paramref name="maxExclusive"/>)</c>.</returns>
-    /// <exception cref="System.ArgumentOutOfRangeException">
+    /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="maxExclusive"/> is less than or equal to zero.
     /// </exception>
     int NextInt(int maxExclusive);

@@ -22,8 +22,18 @@ namespace WormForaging.Core.Rng;
 /// </remarks>
 public sealed class Pcg32Random : IRandom
 {
+    #region Constants
+
     /// <summary>The LCG multiplier specified by PCG32. Do not change; it defines the stream.</summary>
-    private const ulong Multiplier = 6364136223846793005UL;
+    private const ulong MULTIPLIER = 6364136223846793005UL;
+
+    #endregion
+
+    #region Fields
+
+    private ulong _seed;
+
+    private ulong _sequence;
 
     /// <summary>The internal 64-bit LCG state. Advances on every <see cref="NextUInt"/>.</summary>
     private ulong _state;
@@ -32,13 +42,17 @@ public sealed class Pcg32Random : IRandom
     /// The stream selector, forced odd. Two generators with the same seed but different
     /// <see cref="_increment"/> traverse distinct, non-overlapping sequences.
     /// </summary>
-    private readonly ulong _increment;
+    private ulong _increment;
 
     /// <summary>Holds the second value produced by a Box–Muller pair until the next Gaussian draw.</summary>
     private double _spareGaussian;
 
     /// <summary>Whether <see cref="_spareGaussian"/> currently holds an unused sample.</summary>
     private bool _hasSpareGaussian;
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
     /// Creates a generator seeded deterministically from the given values.
@@ -54,6 +68,25 @@ public sealed class Pcg32Random : IRandom
     /// </param>
     public Pcg32Random(ulong seed, ulong sequence = 0)
     {
+        Reseed(seed, sequence);
+    }
+
+    #endregion
+
+    #region Methods
+
+    /// <inheritdoc />
+    public void Reset()
+    {
+        Reseed(_seed, _sequence);
+    }
+
+    /// <inheritdoc />
+    public void Reseed(ulong seed, ulong sequence = 0)
+    {
+        _seed = seed;
+        _sequence = sequence;
+        
         // Standard PCG seeding routine: set the (odd) increment, then fold the seed into the state
         // across two advances so that nearby seeds produce well-separated streams.
         _increment = (sequence << 1) | 1UL;
@@ -134,5 +167,7 @@ public sealed class Pcg32Random : IRandom
     }
 
     /// <summary>Advances the internal LCG state by one step.</summary>
-    private void StepState() => _state = (_state * Multiplier) + _increment;
+    private void StepState() => _state = (_state * MULTIPLIER) + _increment;
+
+    #endregion
 }
