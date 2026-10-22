@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Two needs, no backprop</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--line:#dcdcd4;--acc:#2f7d5b;--hot:#c2410c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161614;--fg:#ecece6;--mut:#9a9a92;--card:#1f1f1c;--line:#34342f;--acc:#4fb88a;--hot:#f08a4b}}
+:root[data-theme="dark"]{--bg:#161614;--fg:#ecece6;--mut:#9a9a92;--card:#1f1f1c;--line:#34342f;--acc:#4fb88a;--hot:#f08a4b}
+html,body{height:auto;margin:0;background:var(--bg);color:var(--fg);font:14px/1.4 system-ui,sans-serif}
+main{max-width:400px;margin:0 auto;padding:12px}
+h1{font-size:16px;margin:0 0 4px}
+p{margin:0 0 8px;color:var(--mut);font-size:12px}
+canvas{width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+button,select{font:inherit;padding:6px 10px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:6px}
+label{font-size:12px;color:var(--mut);display:flex;gap:4px;align-items:center}
+input[type=range]{width:90px}
+#st{font-size:12px;margin-bottom:8px}
+</style></head><body><main>
+<h1>Two needs, no backprop</h1>
+<p>Green glow: food odor. Orange glow: moving heat lamp. The ring around the worm turns orange when hot and blue when cold. Food is absorbed slowly after eating.</p>
+<canvas id="w" width="360" height="360"></canvas>
+<div id="st"></div>
+<div class="row">
+<button id="run">Pause</button><button id="rst">Reset</button><button id="swp">Swap senses</button>
+<select id="mode"><option value="full">Three-factor</option><option value="hebb">Plain Hebbian</option><option value="frozen">Frozen</option></select>
+</div>
+<div class="row">
+<label><input type="checkbox" id="ho" checked>homeostasis</label>
+<label>explore<input type="range" id="T" min="0.3" max="3" step="0.1" value="1"></label>
+<label>speed<input type="range" id="sp" min="1" max="60" step="1" value="8"></label>
+</div>
+<canvas id="h" width="360" height="100"></canvas>
+<canvas id="n" width="360" height="110"></canvas>
+<canvas id="g" width="360" height="90"></canvas>
+<p>Top: energy (green) and body temperature (orange) over time; the shaded band is comfortable. Middle: interneuron activity and readout weights (N/E/S/W rows). Bottom: steps per meal.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const N=16,K=4,NS=8,AR=40,PX=9,COMF=0.55;
+const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];
+const cx=$('w').getContext('2d'),nx=$('n').getContext('2d'),gx=$('g').getContext('2d'),hx=$('h').getContext('2d');
+let S,running=true,perm=[0,1,2,3];
+function randn(){let u=0;while(!u)u=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());}
+function spawn(x,y){let fx,fy;do{fx=4+Math.random()*32;fy=4+Math.random()*32}while(Math.hypot(fx-x,fy-y)<12);return[fx,fy];}
+function init(){
+  const f=spawn(20,20);
+  S={x:20,y:20,fx:f[0],fy:f[1],lx:33,ly:20,t:0,energy:0.5,gut:0,body:COMF,since:0,meals:[],trail:[],hist:[],
+    xp:new Float32Array(N),ax:new Float32Array(N).fill(0.4),g:new Float32Array(N).fill(1),
+    Win:Float32Array.from({length:N*NS},()=>randn()*0.7),
+    Wrec:Float32Array.from({length:N*N},()=>Math.random()<0.2?randn()*0.35:0),
+    wh:Float32Array.from({length:N},()=>randn()*0.5),wt:Float32Array.from({length:N},()=>randn()*0.5),
+    b:Float32Array.from({length:N},()=>randn()*0.1),
+    Wo:Float32Array.from({length:K*N},()=>randn()*0.1),e:new Float32Array(K*N),
+    bo:0,ro:0.01,bt:0,rt:0.002,act:new Float32Array(N)};
+}
+const conc=(px,py)=>Math.exp(-Math.hypot(px-S.fx,py-S.fy)/12);
+const temp=(px,py)=>0.25+0.9*Math.exp(-((px-S.lx)**2+(py-S.ly)**2)/128);
+const clip=(v,m)=>Math.max(-m,Math.min(m,v));
+function step(){
+  const a=S,mode=$('mode').value,T=+$('T').value;
+  a.t++;a.lx=20+13*Math.cos(0.006*a.t);a.ly=20+13*Math.sin(0.0041*a.t);
+  const co=DIRS.map(d=>conc(a.x+d[0]*1.2,a.y+d[1]*1.2)),te=DIRS.map(d=>temp(a.x+d[0]*1.2,a.y+d[1]*1.2));
+  const mo=(co[0]+co[1]+co[2]+co[3])/4,mt=(te[0]+te[1]+te[2]+te[3])/4;
+  const hunger=1-a.energy,gate=0.3+0.7*hunger,dev=a.body-COMF,td=-dev*6;
+  const s=new Float32Array(NS);
+  for(let i=0;i<4;i++){s[i]=gate*10*(co[perm[i]]-mo)/(mo+1e-6);s[4+i]=td*6*(te[perm[i]]-mt);}
+  const xn=new Float32Array(N);
+  for(let i=0;i<N;i++){
+    let u=a.wh[i]*hunger+a.wt[i]*dev*3+a.b[i];
+    for(let j=0;j<NS;j++)u+=a.Win[i*NS+j]*s[j];
+    for(let j=0;j<N;j++)u+=a.Wrec[i*N+j]*a.xp[j];
+    xn[i]=Math.tanh(a.g[i]*u);
+  }
+  const lg=new Float32Array(K),p=new Float32Array(K);let mx=-1e9,z=0;
+  for(let k=0;k<K;k++){let v=0;for(let j=0;j<N;j++)v+=a.Wo[k*N+j]*xn[j];lg[k]=v/T;if(lg[k]>mx)mx=lg[k];}
+  for(let k=0;k<K;k++){p[k]=Math.exp(lg[k]-mx);z+=p[k];}
+  const r0=Math.random();let ch=K-1;
+  for(let k=0,c=0;k<K;k++){p[k]/=z;c+=p[k];if(r0<c&&ch===K-1&&k<K-1){ch=k;}}
+  for(let k=0;k<K;k++){const y=(k===ch?1:0)-p[k];for(let j=0;j<N;j++)a.e[k*N+j]=0.7*a.e[k*N+j]+y*xn[j];}
+  // act
+  const c0=conc(a.x,a.y),d0=Math.abs(a.body-COMF);
+  a.x=Math.min(AR-1,Math.max(1,a.x+DIRS[ch][0]));a.y=Math.min(AR-1,Math.max(1,a.y+DIRS[ch][1]));
+  a.body+=0.08*(temp(a.x,a.y)-a.body);
+  const d1=Math.abs(a.body-COMF),dc=conc(a.x,a.y)-c0,dt=d0-d1;
+  a.bo+=0.01*(dc-a.bo);a.ro+=0.01*(Math.abs(dc-a.bo)-a.ro);
+  a.bt+=0.01*(dt-a.bt);a.rt+=0.01*(Math.abs(dt-a.bt)-a.rt);
+  const rOd=clip((dc-a.bo)/(a.ro+1e-4),3),rTh=clip((dt-a.bt)/(a.rt+0.002),3);
+  // metabolism: eaten food enters the gut and is absorbed slowly; reward arrives with absorption
+  a.since++;
+  if(Math.hypot(a.x-a.fx,a.y-a.fy)<1.8){a.gut+=0.6;a.meals.push(a.since);a.since=0;const f=spawn(a.x,a.y);a.fx=f[0];a.fy=f[1];}
+  const ab=Math.min(a.gut,0.01);a.gut-=ab;
+  a.energy=Math.max(0,Math.min(1,a.energy+ab-0.002-0.006*d1));
+  // two needs compete: each channel's reward is weighted by how urgent its need is
+  const wH=0.2+hunger,wT=0.2+4*d1;
+  const r=wH*(rOd+ab*50)+wT*rTh;
+  const mod=mode==='full'?r:mode==='hebb'?0.6:0;
+  if(mode!=='frozen')for(let i=0;i<K*N;i++)a.Wo[i]=clip(a.Wo[i]+0.04*mod*a.e[i]-1e-4*a.Wo[i],4);
+  for(let i=0;i<N;i++){
+    a.ax[i]+=0.01*(Math.abs(xn[i])-a.ax[i]);
+    if($('ho').checked)a.g[i]=Math.max(0.3,Math.min(3,a.g[i]+0.002*(0.4-a.ax[i])));
+  }
+  a.xp=xn;a.act=xn;
+  a.trail.push([a.x,a.y]);if(a.trail.length>60)a.trail.shift();
+  if(a.t%3===0){a.hist.push([a.energy,a.body]);if(a.hist.length>240)a.hist.shift();}
+}
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function glow(x,y,r,rgb){const g=cx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(${rgb},0.42)`);g.addColorStop(1,`rgba(${rgb},0)`);cx.fillStyle=g;cx.fillRect(0,0,360,360);}
+function draw(){
+  const card=css('--card'),fg=css('--fg'),mut=css('--mut'),acc=css('--acc'),hot=css('--hot');
+  cx.fillStyle=card;cx.fillRect(0,0,360,360);
+  glow(S.lx*PX,S.ly*PX,140,'240,138,75');glow(S.fx*PX,S.fy*PX,150,'79,184,138');
+  cx.fillStyle=hot;cx.fillRect(S.lx*PX-6,S.ly*PX-6,12,12);
+  cx.fillStyle=acc;cx.beginPath();cx.arc(S.fx*PX,S.fy*PX,6,0,7);cx.fill();
+  cx.strokeStyle=mut;cx.lineWidth=1;cx.beginPath();
+  S.trail.forEach((t,i)=>i?cx.lineTo(t[0]*PX,t[1]*PX):cx.moveTo(t[0]*PX,t[1]*PX));cx.stroke();
+  cx.fillStyle=fg;cx.beginPath();cx.arc(S.x*PX,S.y*PX,5,0,7);cx.fill();
+  const dev=S.body-COMF;
+  if(Math.abs(dev)>0.08){cx.strokeStyle=dev>0?hot:'#4f8fd8';cx.lineWidth=3;cx.beginPath();cx.arc(S.x*PX,S.y*PX,9,0,7);cx.stroke();}
+  // needs history
+  hx.fillStyle=card;hx.fillRect(0,0,360,100);
+  hx.fillStyle='rgba(240,138,75,0.15)';hx.fillRect(0,90-(COMF+0.12)*80,360,0.24*80);
+  const line=(i,col)=>{hx.strokeStyle=col;hx.lineWidth=2;hx.beginPath();S.hist.forEach((h,k)=>{const X=k*1.5,Y=90-h[i]*80;k?hx.lineTo(X,Y):hx.moveTo(X,Y);});hx.stroke();};
+  line(0,acc);line(1,hot);
+  hx.fillStyle=mut;hx.font='10px sans-serif';hx.fillText('energy (green) · body temp (orange)',6,11);
+  // network
+  nx.fillStyle=card;nx.fillRect(0,0,360,110);
+  for(let i=0;i<N;i++){const v=S.act[i];nx.fillStyle=v>0?acc:hot;nx.fillRect(i*11+4,55,9,-v*45);}
+  nx.fillStyle=mut;nx.fillRect(0,55,180,1);
+  for(let k=0;k<K;k++)for(let j=0;j<N;j++){
+    const w=S.Wo[k*N+j]/2,al=Math.min(1,Math.abs(w));
+    nx.fillStyle=w>0?`rgba(79,184,138,${al})`:`rgba(240,138,75,${al})`;nx.fillRect(194+j*10,10+k*24,9,22);
+  }
+  nx.fillStyle=mut;nx.font='10px sans-serif';['N','E','S','W'].forEach((l,k)=>nx.fillText(l,182,25+k*24));
+  // steps per meal
+  gx.fillStyle=card;gx.fillRect(0,0,360,90);
+  const M=S.meals.slice(-40),mxv=Math.max(100,...M);
+  gx.strokeStyle=acc;gx.lineWidth=2;gx.beginPath();
+  M.forEach((v,i)=>{const X=10+i*(340/Math.max(M.length-1,1)),Y=80-v/mxv*65;i?gx.lineTo(X,Y):gx.moveTo(X,Y);});gx.stroke();
+  gx.fillStyle=mut;gx.fillText('steps per meal (max '+mxv+')',10,12);
+  const l5=S.meals.slice(-5);
+  $('st').textContent='meals '+S.meals.length+' · last-5 avg '+(l5.length?Math.round(l5.reduce((a,b)=>a+b)/l5.length):'–')+' · energy '+S.energy.toFixed(2)+' · gut '+S.gut.toFixed(2)+' · body '+S.body.toFixed(2);
+}
+function loop(){if(running)for(let i=0;i<+$('sp').value;i++)step();draw();requestAnimationFrame(loop);}
+$('run').onclick=()=>{running=!running;$('run').textContent=running?'Pause':'Run';};
+$('rst').onclick=()=>{perm=[0,1,2,3];init();};
+$('swp').onclick=()=>{perm=perm[0]===0?[2,3,0,1]:[0,1,2,3];};
+init();loop();
+</script></body></html>

@@ -1,0 +1,19 @@
+# Normalize line endings: store text as LF in the repo, check out native on each OS.
+# Keeps a cross-platform .NET repo free of phantom CRLF/LF diffs.
+* text=auto
+
+*.cs      text diff=csharp
+*.csproj  text
+*.props   text
+*.axaml   text
+*.xml     text
+*.json    text
+*.yaml    text
+*.yml     text
+*.md      text
+*.html    text
+*.slnx    text
+
+# Binary assets must never be line-ending normalized.
+*.ico     binary
+*.png     binary

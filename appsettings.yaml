@@ -1,0 +1,19 @@
+# WormForaging application configuration.
+#
+# Read at startup by the Generic Host (see src/WormForaging.App/App.axaml.cs). This file lives at
+# the repository root for ease of access; the app locates it by walking up from the executable, so
+# edits here take effect on the next run without copying anything. Override the path with --config.
+
+Serilog:
+  # Minimum level written to both sinks. One of: Verbose, Debug, Information, Warning, Error, Fatal.
+  # The --log-level command-line option overrides this.
+  MinimumLevel: Debug
+  # Directory for rolling log files, relative to this file's location (the repo root).
+  LogDirectory: logs
+  # Number of daily log files to keep before the oldest are deleted.
+  RetainedFileCountLimit: 14
+
+Simulation:
+  # Default RNG seed for reproducible runs. The --seed command-line option overrides this; when
+  # neither is set the app chooses a random seed and logs it so the run can be reproduced.
+  Seed: 1

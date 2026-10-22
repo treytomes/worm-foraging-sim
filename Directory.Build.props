@@ -1,0 +1,24 @@
+<Project>
+
+  <!--
+    Repo-wide build defaults. Every project under this directory inherits these unless it
+    overrides them. Two house rules live here:
+      1. Warnings are errors    — keep the tree clean; a warning is a bug we haven't read yet.
+      2. XML documentation is required — GenerateDocumentationFile makes the compiler emit
+         CS1591 ("missing XML comment for publicly visible type or member"), and because
+         warnings are errors, undocumented public API fails the build. Well-documented code
+         is how a human (and the next Claude) gets up to speed fast.
+    Projects that legitimately don't need member docs (tests, the UI shell while it's being
+    ported) opt out with <GenerateDocumentationFile>false</GenerateDocumentationFile>.
+  -->
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+
+</Project>

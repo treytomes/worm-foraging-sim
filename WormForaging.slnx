@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WormForaging.App/WormForaging.App.csproj" />
+    <Project Path="src/WormForaging.Core/WormForaging.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WormForaging.Core.Tests/WormForaging.Core.Tests.csproj" />
+  </Folder>
+</Solution>

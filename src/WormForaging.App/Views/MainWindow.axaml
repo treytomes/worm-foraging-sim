@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:WormForaging.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="400"
+        x:Class="WormForaging.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="WormForaging">
+
+    <!-- The runtime DataContext is a DI-resolved MainWindowViewModel, set in App.OnFrameworkInitializationCompleted. -->
+    <TextBlock Text="{Binding Status}"
+               Margin="24"
+               TextWrapping="Wrap"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center" />
+
+</Window>
