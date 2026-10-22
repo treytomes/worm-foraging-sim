@@ -58,7 +58,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       equivalent (same buckets, same `K-1` fallback). Exposes flat `Get/SetReadoutWeight` for the
       three-factor rule; `MotorDecision` carries choice + probabilities (the `one-hot − p` term).
       18 tests incl. scripted-draw bucket parity + 200k-trial frequency check; Core at 99.8%.
-- [ ] Port the learning rule: eligibility trace, modulator, three modes (full/hebb/frozen).
+- [x] Port the learning rule: `LearningRule` + `LearningMode` enum. Eligibility `e = 0.7·e +
+      (one-hot−p)·x`; reward-prediction baselines/scales (`bo,ro,bt,rt`) → clipped surprise
+      `rOd,rTh`; modulator `wH·(rOd+ab·50) + wT·rTh` with modes full=`r` / hebb=`0.6` / frozen=`0`;
+      readout update `Wo += 0.04·mod·e − 1e-4·Wo`, clamped ±4, **skipped entirely when frozen** (no
+      decay either). **Hard rule enforced + tested:** update is local — each `Wo[i]` depends only on
+      its own `e[i]`, `Wo[i]`, and the one broadcast scalar; a test proves zeroing all but one
+      eligibility entry changes exactly one weight. No backward pass anywhere. 19 tests; Core at 98.9%.
+- [ ] **`Simulation` step loop** — wire World→Senses→Network→Motor→Body→Learning in the prototype's
+      exact order (lamp, sense, activate, select, accumulate-eligibility, capture c0/d0, move,
+      compute dc/dt/d1, update-reward-prediction, metabolize, modulate, apply-readout, adapt-commit).
+      Expose a plain state snapshot. This is the last Core piece before the UI.
 - [ ] Avalonia UI (custom `Control.Render` + `DispatcherTimer`): arena first, plus the
       essential controls (pause, reset, swap, mode, homeostasis, explore, speed) and a basic
       stats readout. **Scope decision: Core-faithful, UI-lean** — exact simulation parity now,

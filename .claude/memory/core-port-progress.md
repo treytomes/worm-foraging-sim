@@ -12,8 +12,11 @@ prototype's `step()`.
 As of 2026-10-22, done: `SimConfig` (every prototype constant, one `record`), `World`
 (odor `exp(-d/12)`, Lissajous lamp, temp field, food spawn/respawn), `Body` (move+clamp,
 body-temp lag, eat/gut/energy), `Directions`, `SensePermutation` (swap), `Senses`
-(8-channel differential sensors). Next, in order: **network → motor/softmax → learning
-rule → `Simulation` step loop**, then the Avalonia UI and the parity check.
+(8-channel differential sensors), `Network` (16 interneurons, sparse recurrence,
+homeostatic gain — no learned weights), `MotorLayer`+`MotorDecision` (readout `Wo`,
+softmax, inverse-CDF sample), `LearningRule`+`LearningMode` (three-factor update,
+eligibility + reward prediction). 124 Core tests, ~99% line cov. **Next: `Simulation`
+step loop (last Core piece), then Avalonia UI and the parity check.**
 
 Decisions that persist:
 - Core computes in `double`, prototype is `Float32Array`. Parity is **qualitative**, not
@@ -24,6 +27,11 @@ Decisions that persist:
   network directly.
 - The sense-swap is a first-class `SensePermutation` (Identity / Swapped=[2,3,0,1] /
   Toggle) because Phase 2's experiment hinges on it.
+- Component seam: `Network` = fixed reservoir (no learned weights); `MotorLayer` owns the
+  learned readout `Wo`; `LearningRule` owns eligibility + reward prediction and updates `Wo`
+  via `MotorLayer.Get/SetReadoutWeight`. The three-factor update is **local by construction**
+  (each weight uses only its own `e[i]`, `Wo[i]`, one broadcast scalar) and a test proves it —
+  this is the no-backprop hard rule, enforced not just asserted. Frozen mode = no weight change.
 
 Working rhythm Trey likes here: one coherent slice at a time, commit when asked, report
 negative results / surprises plainly (e.g. a failing test that revealed real model

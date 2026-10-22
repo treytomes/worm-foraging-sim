@@ -31,8 +31,17 @@ original design notes and rationale from the prototype author.
   - **Port status (slice by slice, each with parity tests, Core line cov ~99%):**
     `SimConfig` ✓ · `World` (odor/temp fields, Lissajous lamp, food spawn) ✓ · `Body`
     (movement, thermoregulation, metabolism) ✓ · `Directions` + `SensePermutation` + `Senses`
-    (8-channel differential sensors, swap) ✓ · **network → motor → learning → `Simulation`
-    (next)**. Order follows the prototype's `step()`; see `TODO.md` for the live checklist.
+    (8-channel differential sensors, swap) ✓ · `Network` (16 interneurons, sparse recurrence,
+    homeostatic gain; owns NO learned weights) ✓ · `MotorLayer` + `MotorDecision` (readout `Wo`,
+    softmax `Policy`, inverse-CDF `Select`) ✓ · `LearningRule` + `LearningMode`
+    (three-factor update; owns eligibility + reward prediction) ✓ · **`Simulation` step loop
+    (next, last Core piece) → then Avalonia UI**. Order follows the prototype's `step()`; see
+    `TODO.md` for the live checklist.
+  - **Component seam:** `Network` holds the fixed reservoir only; `MotorLayer` holds the learned
+    readout `Wo`; `LearningRule` holds the eligibility trace + reward-prediction state and updates
+    `Wo` through `MotorLayer`'s flat `Get/SetReadoutWeight`. The three-factor update is **local by
+    construction** — each weight uses only its own `e[i]`, `Wo[i]`, and one broadcast scalar — and
+    a test asserts it (no backward pass, ever). Frozen mode touches no weights (not even decay).
   - **Precision:** Core computes in `double`; the prototype uses `Float32Array`. Parity is
     *qualitative*, not bit-for-bit JS. "Deterministic" means same seed + config ⇒ identical
     *C#* run (guarded by tests), not identical to the browser.
