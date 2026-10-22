@@ -38,7 +38,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
 - [x] Port the world: arena, odor field `exp(-d/12)`, Lissajous heat lamp, temperature field
       `0.25+0.9·exp(…)`, food spawn/respawn with rejection radius. `World` owns the environment
       only (no body/net); 18 parity tests, Core at 99% line cov.
-- [ ] Port the body: energy, gut/absorption, body-temperature lag.
+- [x] Port the body: position + arena clamp, body-temperature lag `+=0.08·(temp−body)`, eating,
+      gut absorption `min(gut,0.01)`, energy balance `+ab−0.002−0.006·d1`, meal-interval log.
+      `Body` reads `World` but holds no sensing/net/learning; 16 tests, Core at 99.5% line cov.
 - [ ] Port the senses: 4 odor + 4 heat (gated, Weber-normalized) + 2 internal drives.
 - [ ] Port the network: 16 interneurons, sparse recurrent wiring, `tanh`, homeostatic gain.
 - [ ] Port motor layer + softmax action sampling — rewrite as a clean cumulative sample
