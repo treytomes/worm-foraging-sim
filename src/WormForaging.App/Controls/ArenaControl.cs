@@ -9,9 +9,18 @@ namespace WormForaging.App.Controls;
 /// Custom control that renders the simulation arena.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Renders the worm, food, heat lamp, trails, and glow effects using Avalonia's
 /// <see cref="DrawingContext"/>. No simulation logic lives here - it only draws
 /// state provided by the view model.
+/// </para>
+/// <para>
+/// The control has no intrinsic size: it fills its container and fits a centered, square arena
+/// inside (letterboxing any excess on the longer axis). Everything in the arena - positions,
+/// glyph sizes, pen widths, and glow radii - is scaled by a single factor derived from the fitted
+/// square and <see cref="ArenaSize"/>, so the drawing stays proportional at any size. Its own
+/// background is painted as a distinct square so the arena reads as separate from its host.
+/// </para>
 /// </remarks>
 public sealed class ArenaControl : Control
 {
@@ -19,6 +28,39 @@ public sealed class ArenaControl : Control
 
     /// <summary>Thermal deviation below which the discomfort ring is not drawn.</summary>
     private const double RingDeadband = 0.08;
+
+    /// <summary>Background color of the control (distinguishes the arena from its host).</summary>
+    private static readonly Color BackgroundColor = Color.Parse("#121210");
+
+    /// <summary>Color of the (square) arena field within the control.</summary>
+    private static readonly Color ArenaColor = Color.Parse("#1f1f1c");
+
+    /// <summary>Lamp half-size, in cells.</summary>
+    private const double LampHalfSizeCells = 6.0 / 9.0;
+
+    /// <summary>Food dot radius, in cells.</summary>
+    private const double FoodRadiusCells = 6.0 / 9.0;
+
+    /// <summary>Worm dot radius, in cells.</summary>
+    private const double WormRadiusCells = 5.0 / 9.0;
+
+    /// <summary>Discomfort ring radius, in cells.</summary>
+    private const double RingRadiusCells = 9.0 / 9.0;
+
+    /// <summary>Ring stroke width, in cells (floored to one pixel when drawn).</summary>
+    private const double RingStrokeCells = 3.0 / 9.0;
+
+    /// <summary>Trail stroke width, in cells (floored to one pixel when drawn).</summary>
+    private const double TrailStrokeCells = 1.0 / 9.0;
+
+    /// <summary>Lamp glow radius, in cells.</summary>
+    private const double LampGlowRadiusCells = 140.0 / 9.0;
+
+    /// <summary>Food glow radius, in cells.</summary>
+    private const double FoodGlowRadiusCells = 150.0 / 9.0;
+
+    /// <summary>Opacity of the radial glows.</summary>
+    private const double GlowOpacity = 0.42;
 
     /// <summary>
     /// Defines the <see cref="SimulationSnapshot"/> property.
@@ -33,10 +75,16 @@ public sealed class ArenaControl : Control
         AvaloniaProperty.Register<ArenaControl, IReadOnlyList<(double X, double Y)>?>(nameof(Trail), coerce: CoerceTrail);
 
     /// <summary>
-    /// Defines the <see cref="Scale"/> property.
+    /// Defines the <see cref="ArenaSize"/> property.
     /// </summary>
-    public static readonly StyledProperty<double> ScaleProperty =
-        AvaloniaProperty.Register<ArenaControl, double>(nameof(Scale), 9.0);
+    public static readonly StyledProperty<int> ArenaSizeProperty =
+        AvaloniaProperty.Register<ArenaControl, int>(nameof(ArenaSize), 40);
+
+    /// <summary>
+    /// Defines the <see cref="Padding"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> PaddingProperty =
+        AvaloniaProperty.Register<ArenaControl, double>(nameof(Padding), 6.0);
 
     /// <summary>
     /// Defines the <see cref="ComfortTemperature"/> property.
@@ -53,8 +101,8 @@ public sealed class ArenaControl : Control
     /// </summary>
     public ArenaControl()
     {
-        Width = 360;
-        Height = 360;
+        MinWidth = 120;
+        MinHeight = 120;
     }
 
     #endregion
@@ -80,12 +128,21 @@ public sealed class ArenaControl : Control
     }
 
     /// <summary>
-    /// Gets or sets the pixel scale for rendering.
+    /// Gets or sets the arena side length in cells, used to derive the drawing scale.
     /// </summary>
-    public double Scale
+    public int ArenaSize
     {
-        get => GetValue(ScaleProperty);
-        set => SetValue(ScaleProperty, value);
+        get => GetValue(ArenaSizeProperty);
+        set => SetValue(ArenaSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the inset between the control edge and the fitted arena square, in pixels.
+    /// </summary>
+    public double Padding
+    {
+        get => GetValue(PaddingProperty);
+        set => SetValue(PaddingProperty, value);
     }
 
     /// <summary>
@@ -126,7 +183,8 @@ public sealed class ArenaControl : Control
         base.OnPropertyChanged(change);
         if (change.Property == SimulationSnapshotProperty
             || change.Property == TrailProperty
-            || change.Property == ScaleProperty
+            || change.Property == ArenaSizeProperty
+            || change.Property == PaddingProperty
             || change.Property == ComfortTemperatureProperty)
         {
             InvalidateVisual();
@@ -138,94 +196,122 @@ public sealed class ArenaControl : Control
     {
         base.Render(context);
 
+        double width = Bounds.Width;
+        double height = Bounds.Height;
+        if (width <= 0 || height <= 0 || ArenaSize <= 0)
+        {
+            return;
+        }
+
+        // Control background, distinct from the arena field.
+        context.FillRectangle(new SolidColorBrush(BackgroundColor), new Rect(0, 0, width, height));
+
+        // Fit a centered square arena inside the padded control box (letterbox the excess).
+        double available = Math.Min(width, height) - Padding * 2;
+        if (available <= 0)
+        {
+            return;
+        }
+
+        double scale = available / ArenaSize;
+        double arenaPx = scale * ArenaSize;
+        double originX = (width - arenaPx) / 2;
+        double originY = (height - arenaPx) / 2;
+
+        // Arena field.
+        var arenaRect = new Rect(originX, originY, arenaPx, arenaPx);
+        context.FillRectangle(new SolidColorBrush(ArenaColor), arenaRect);
+
         var snapshot = SimulationSnapshot;
         if (snapshot == null)
         {
             return;
         }
 
-        var scale = Scale;
-        Rect bounds = new(0, 0, Bounds.Width, Bounds.Height);
+        double Px(double cells) => cells * scale;
+        Point At(double x, double y) => new(originX + x * scale, originY + y * scale);
 
-        // Background
-        context.FillRectangle(new SolidColorBrush(Color.Parse("#1f1f1c")), bounds);
+        // Lamp glow.
+        DrawRadialGlow(context, At(snapshot.LampX, snapshot.LampY), Px(LampGlowRadiusCells), Color.Parse("#f08a4b"), width, height);
 
-        // Lamp glow
-        DrawRadialGlow(context, snapshot.LampX * scale, snapshot.LampY * scale, 140, Color.Parse("#f08a4b"), 0.42);
+        // Food glow.
+        DrawRadialGlow(context, At(snapshot.FoodX, snapshot.FoodY), Px(FoodGlowRadiusCells), Color.Parse("#4fb88a"), width, height);
 
-        // Food glow
-        DrawRadialGlow(context, snapshot.FoodX * scale, snapshot.FoodY * scale, 150, Color.Parse("#4fb88a"), 0.42);
-
-        // Lamp
+        // Lamp.
+        double lampHalf = Px(LampHalfSizeCells);
+        Point lampCenter = At(snapshot.LampX, snapshot.LampY);
         context.FillRectangle(
             new SolidColorBrush(Color.Parse("#c2410c")),
-            new Rect(snapshot.LampX * scale - 6, snapshot.LampY * scale - 6, 12, 12));
+            new Rect(lampCenter.X - lampHalf, lampCenter.Y - lampHalf, lampHalf * 2, lampHalf * 2));
 
-        // Food
+        // Food.
+        double foodRadius = Px(FoodRadiusCells);
         context.DrawEllipse(
             new SolidColorBrush(Color.Parse("#2f7d5b")),
             null,
-            new Point(snapshot.FoodX * scale, snapshot.FoodY * scale),
-            6,
-            6);
+            At(snapshot.FoodX, snapshot.FoodY),
+            foodRadius,
+            foodRadius);
 
-        // Trail
+        // Trail.
         var trail = Trail;
         if (trail != null && trail.Count > 1)
         {
-            var trailBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
-            var trailPen = new Pen(trailBrush, 1);
+            var trailPen = new Pen(new SolidColorBrush(Color.Parse("#9a9a92")), Math.Max(1, Px(TrailStrokeCells)));
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
             {
-                ctx.BeginFigure(new Point(trail[0].X * scale, trail[0].Y * scale), false);
+                ctx.BeginFigure(At(trail[0].X, trail[0].Y), false);
                 for (int i = 1; i < trail.Count; i++)
                 {
-                    ctx.LineTo(new Point(trail[i].X * scale, trail[i].Y * scale));
+                    ctx.LineTo(At(trail[i].X, trail[i].Y));
                 }
                 ctx.EndFigure(false);
             }
             context.DrawGeometry(null, trailPen, geometry);
         }
 
-        // Worm
+        // Worm.
+        double wormRadius = Px(WormRadiusCells);
+        Point wormCenter = At(snapshot.WormX, snapshot.WormY);
         context.DrawEllipse(
             new SolidColorBrush(Color.Parse("#ecece6")),
             null,
-            new Point(snapshot.WormX * scale, snapshot.WormY * scale),
-            5,
-            5);
+            wormCenter,
+            wormRadius,
+            wormRadius);
 
-        // Temperature ring
+        // Temperature ring.
         var comfortTemp = ComfortTemperature;
         var dev = snapshot.BodyTemperature - comfortTemp;
         if (!double.IsNaN(comfortTemp) && Math.Abs(dev) > RingDeadband)
         {
             var ringColor = dev > 0 ? Color.Parse("#f08a4b") : Color.Parse("#4f8fd8");
+            double ringRadius = Px(RingRadiusCells);
             context.DrawEllipse(
                 null,
-                new Pen(new SolidColorBrush(ringColor), 3),
-                new Point(snapshot.WormX * scale, snapshot.WormY * scale),
-                9,
-                9);
+                new Pen(new SolidColorBrush(ringColor), Math.Max(1, Px(RingStrokeCells))),
+                wormCenter,
+                ringRadius,
+                ringRadius);
         }
     }
 
-    private static void DrawRadialGlow(DrawingContext context, double x, double y, double radius, Color color, double opacity)
+    private static void DrawRadialGlow(DrawingContext context, Point center, double radius, Color color, double width, double height)
     {
         var brush = new RadialGradientBrush
         {
-            GradientOrigin = new RelativePoint(x, y, RelativeUnit.Absolute),
-            Center = new RelativePoint(x, y, RelativeUnit.Absolute),
+            GradientOrigin = new RelativePoint(center, RelativeUnit.Absolute),
+            Center = new RelativePoint(center, RelativeUnit.Absolute),
             RadiusX = new RelativeScalar(radius, RelativeUnit.Absolute),
             RadiusY = new RelativeScalar(radius, RelativeUnit.Absolute),
             GradientStops =
             {
-                new GradientStop(Color.FromArgb((byte)(opacity * 255), color.R, color.G, color.B), 0),
+                new GradientStop(Color.FromArgb((byte)(GlowOpacity * 255), color.R, color.G, color.B), 0),
                 new GradientStop(Color.FromArgb(0, color.R, color.G, color.B), 1)
             }
         };
-        context.FillRectangle(brush, new Rect(0, 0, 360, 360));
+        context.FillRectangle(brush, new Rect(0, 0, width, height));
     }
 
     #endregion

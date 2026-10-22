@@ -215,6 +215,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public double ComfortTemperature => _config.ComfortTemperature;
 
     /// <summary>
+    /// Gets the arena side length in cells, used by the arena control to derive its drawing scale.
+    /// </summary>
+    public int ArenaSize => _config.ArenaSize;
+
+    /// <summary>
     /// Gets the status text.
     /// </summary>
     public string StatusText

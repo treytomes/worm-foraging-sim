@@ -21,13 +21,12 @@
 
         <controls:ArenaControl Grid.Row="0"
                                 Grid.Column="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
                                 SimulationSnapshot="{Binding CurrentSnapshot}"
                                 Trail="{Binding Trail}"
-                                ComfortTemperature="{Binding ComfortTemperature}"
-                                Width="360"
-                                Height="360"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Top" />
+                                ArenaSize="{Binding ArenaSize}"
+                                ComfortTemperature="{Binding ComfortTemperature}" />
 
         <StackPanel Grid.Row="0" Grid.Column="1" Spacing="8">
             <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap" />
