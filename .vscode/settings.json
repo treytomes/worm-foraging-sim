@@ -1,6 +1,14 @@
 {
     "cSpell.words": [
+        "appsettings",
         "Avalonia",
-        "PRNG"
+        "Hebbian",
+        "Interneuron",
+        "interneurons",
+        "MVVM",
+        "PRNG",
+        "respawn",
+        "seedable",
+        "Serilog"
     ]
 }

@@ -50,7 +50,7 @@ public interface IRandom
     /// </summary>
     /// <remarks>
     /// Mirrors the <c>randn()</c> helper from the original browser prototype, which the weight and
-    /// wiring initialisers scale to the variances they need.
+    /// wiring initializers scale to the variances they need.
     /// </remarks>
     /// <returns>A pseudo-random, normally distributed <see cref="double"/>.</returns>
     double NextGaussian();

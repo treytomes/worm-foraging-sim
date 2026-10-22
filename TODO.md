@@ -33,8 +33,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       line-coverage gate (coverlet).
 - [ ] **Smoke-run the app** to confirm the host boots, reads YAML, logs to console + file, and the
       seeded draws render (not yet launched this session).
-- [ ] `SimConfig` — every prototype constant becomes a named, documented field.
-- [ ] Port the world: arena, odor field, moving heat lamp, temperature field, food respawn.
+- [x] `SimConfig` — every prototype constant becomes a named, documented field (one `record`;
+      all defaults = prototype values; `double` not `float32`, parity is qualitative not bit-exact).
+- [x] Port the world: arena, odor field `exp(-d/12)`, Lissajous heat lamp, temperature field
+      `0.25+0.9·exp(…)`, food spawn/respawn with rejection radius. `World` owns the environment
+      only (no body/net); 18 parity tests, Core at 99% line cov.
 - [ ] Port the body: energy, gut/absorption, body-temperature lag.
 - [ ] Port the senses: 4 odor + 4 heat (gated, Weber-normalized) + 2 internal drives.
 - [ ] Port the network: 16 interneurons, sparse recurrent wiring, `tanh`, homeostatic gain.
