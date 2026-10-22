@@ -5,7 +5,7 @@ headless harness exists — otherwise every claim is just a browser eyeball.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guessed)* for results.
 
-## Phase 0 — Port to C# / Avalonia at feature parity  ← we are here
+## Phase 0 — Port to C# / Avalonia at feature parity  ← Core complete; UI + parity check remain
 
 - [x] Scaffold solution: `Core`, `App`, `Core.Tests` projects; `.slnx`; `.gitignore`.
 - [x] **`IRandom` interface** in `Core` — the single RNG abstraction every stochastic path
@@ -65,10 +65,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       decay either). **Hard rule enforced + tested:** update is local — each `Wo[i]` depends only on
       its own `e[i]`, `Wo[i]`, and the one broadcast scalar; a test proves zeroing all but one
       eligibility entry changes exactly one weight. No backward pass anywhere. 19 tests; Core at 98.9%.
-- [ ] **`Simulation` step loop** — wire World→Senses→Network→Motor→Body→Learning in the prototype's
-      exact order (lamp, sense, activate, select, accumulate-eligibility, capture c0/d0, move,
-      compute dc/dt/d1, update-reward-prediction, metabolize, modulate, apply-readout, adapt-commit).
-      Expose a plain state snapshot. This is the last Core piece before the UI.
+- [x] **`Simulation` step loop** — wires World→Senses→Network→Motor→Body→Learning in the prototype's
+      exact order; drives read once at step top and reused in the modulator; odor delta measured
+      across the move but before respawn. Runtime controls (Mode, ExploreTemperature, Homeostasis,
+      Permutation/SwapSenses). `SimulationSnapshot` = immutable copied state for UI + harness.
+      16 end-to-end tests: **bit-identical runs from a seed**, Full changes `Wo` / Frozen never does,
+      bounded state over 5k steps, eat path fires. Core at 98.6%. **Core is complete.**
+      *(No behavioral claim yet — full-vs-frozen meal rates etc. are Phase 1, by the harness.)*
 - [ ] Avalonia UI (custom `Control.Render` + `DispatcherTimer`): arena first, plus the
       essential controls (pause, reset, swap, mode, homeostasis, explore, speed) and a basic
       stats readout. **Scope decision: Core-faithful, UI-lean** — exact simulation parity now,

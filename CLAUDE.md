@@ -34,9 +34,10 @@ original design notes and rationale from the prototype author.
     (8-channel differential sensors, swap) ✓ · `Network` (16 interneurons, sparse recurrence,
     homeostatic gain; owns NO learned weights) ✓ · `MotorLayer` + `MotorDecision` (readout `Wo`,
     softmax `Policy`, inverse-CDF `Select`) ✓ · `LearningRule` + `LearningMode`
-    (three-factor update; owns eligibility + reward prediction) ✓ · **`Simulation` step loop
-    (next, last Core piece) → then Avalonia UI**. Order follows the prototype's `step()`; see
-    `TODO.md` for the live checklist.
+    (three-factor update; owns eligibility + reward prediction) ✓ · `Simulation` step loop +
+    `SimulationSnapshot` (wires it all in prototype order; bit-identical from a seed) ✓.
+    **Core is complete (140 tests, ~99% line). Next: Avalonia UI, then the parity check.** Order
+    follows the prototype's `step()`; see `TODO.md` for the live checklist.
   - **Component seam:** `Network` holds the fixed reservoir only; `MotorLayer` holds the learned
     readout `Wo`; `LearningRule` holds the eligibility trace + reward-prediction state and updates
     `Wo` through `MotorLayer`'s flat `Get/SetReadoutWeight`. The three-factor update is **local by

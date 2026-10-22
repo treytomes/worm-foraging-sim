@@ -40,13 +40,15 @@ condition, and proper before/after metrics instead of eyeballing a canvas.
 
 ## Status
 
-🚧 **Port nearly complete; nothing measured yet.** Every Core component is ported with
-parity tests against the prototype — `SimConfig`, `World`, `Body`, `Senses` (+ the sense-swap),
-`Network`, `MotorLayer`, and the `LearningRule` itself — at ~99% line coverage. What does *not*
-yet exist: the `Simulation` step loop that runs them together, the Avalonia UI, and therefore
-**any end-to-end behavioural run**. The learning has still only ever been seen once, by hand,
-in a browser with an unseeded RNG. Assembling the loop and then *measuring* the rule is the
-next goal, not a finished result. See [`TODO.md`](TODO.md).
+🚧 **Core complete; nothing measured yet.** The whole simulation is ported with parity tests
+against the prototype — `SimConfig`, `World`, `Body`, `Senses` (+ the sense-swap), `Network`,
+`MotorLayer`, `LearningRule`, and the `Simulation` step loop that runs them together — 140
+tests at ~99% line coverage, and a given seed reproduces a run bit-for-bit. What does *not*
+yet exist: the Avalonia UI and the headless harness, and therefore **any end-to-end behavioral
+result**. The learning has still only ever been *seen* once, by hand, in a browser with an
+unseeded RNG; the C# port can now reproduce runs, but *measuring* whether the rule learns —
+and beats the Hebbian and frozen controls — is the next goal, not a finished result. See
+[`TODO.md`](TODO.md).
 
 What is verified vs. guessed:
 

@@ -15,8 +15,11 @@ body-temp lag, eat/gut/energy), `Directions`, `SensePermutation` (swap), `Senses
 (8-channel differential sensors), `Network` (16 interneurons, sparse recurrence,
 homeostatic gain — no learned weights), `MotorLayer`+`MotorDecision` (readout `Wo`,
 softmax, inverse-CDF sample), `LearningRule`+`LearningMode` (three-factor update,
-eligibility + reward prediction). 124 Core tests, ~99% line cov. **Next: `Simulation`
-step loop (last Core piece), then Avalonia UI and the parity check.**
+eligibility + reward prediction), `Simulation`+`SimulationSnapshot` (wires it all in
+prototype `step()` order; bit-identical from a seed). **Core is COMPLETE — 140 tests,
+~99% line cov. Next: Avalonia UI (custom `Control.Render` + `DispatcherTimer`), then the
+headless harness + the parity check. Nothing measured end-to-end yet — behavioral claims
+(full vs hebb vs frozen) are Phase 1, by the harness.**
 
 Decisions that persist:
 - Core computes in `double`, prototype is `Float32Array`. Parity is **qualitative**, not
