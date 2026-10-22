@@ -4,64 +4,71 @@
         xmlns:controls="using:WormForaging.App.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="860"
         x:Class="WormForaging.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Two needs, no backprop"
         Width="780"
-        Height="700">
+        Height="860">
+    
+    <!-- 2x2 layout: (0,0) arena, (0,1) control panel, (1,0) plots, (1,1) reserved. -->
+    <Grid Margin="12"
+        RowDefinitions="*,*"
+        ColumnDefinitions="*,*"
+        RowSpacing="8"
+        ColumnSpacing="8">
 
-    <ScrollViewer>
-        <StackPanel Margin="12" Spacing="8">
-            <Grid ColumnDefinitions="400,*">
-                <controls:ArenaControl Grid.Column="0"
-                                       SimulationSnapshot="{Binding CurrentSnapshot}"
-                                       Trail="{Binding Trail}"
-                                       ComfortTemperature="{Binding ComfortTemperature}"
-                                       Width="360"
-                                       Height="360"
-                                       HorizontalAlignment="Left" />
+        <controls:ArenaControl Grid.Row="0"
+                                Grid.Column="0"
+                                SimulationSnapshot="{Binding CurrentSnapshot}"
+                                Trail="{Binding Trail}"
+                                ComfortTemperature="{Binding ComfortTemperature}"
+                                Width="360"
+                                Height="360"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top" />
 
-                <StackPanel Grid.Column="1" Spacing="8">
-                    <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap" />
+        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="8">
+            <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Button Content="{Binding RunButtonText}" Command="{Binding ToggleRunCommand}" />
-                        <Button Content="Reset" Command="{Binding ResetCommand}" />
-                        <Button Content="Swap senses" Command="{Binding SwapSensesCommand}" />
-                    </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="{Binding RunButtonText}" Command="{Binding ToggleRunCommand}" />
+                <Button Content="Reset" Command="{Binding ResetCommand}" />
+                <Button Content="Swap senses" Command="{Binding SwapSensesCommand}" />
+            </StackPanel>
 
-                    <ComboBox SelectedIndex="{Binding ModeIndex}" Width="150">
-                        <ComboBoxItem Content="Three-factor" />
-                        <ComboBoxItem Content="Plain Hebbian" />
-                        <ComboBoxItem Content="Frozen" />
-                    </ComboBox>
+            <ComboBox SelectedIndex="{Binding ModeIndex}" Width="150">
+                <ComboBoxItem Content="Three-factor" />
+                <ComboBoxItem Content="Plain Hebbian" />
+                <ComboBoxItem Content="Frozen" />
+            </ComboBox>
 
-                    <CheckBox Content="homeostasis" IsChecked="{Binding HomeostasisEnabled}" />
+            <CheckBox Content="homeostasis" IsChecked="{Binding HomeostasisEnabled}" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="explore" VerticalAlignment="Center" />
-                        <Slider Minimum="0.3" Maximum="3" Value="{Binding ExploreTemperature}" Width="120" />
-                        <TextBlock Text="{Binding ExploreTemperature, StringFormat='{}{0:F1}'}" VerticalAlignment="Center" />
-                    </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="explore" VerticalAlignment="Center" />
+                <Slider Minimum="0.3" Maximum="3" Value="{Binding ExploreTemperature}" Width="120" />
+                <TextBlock Text="{Binding ExploreTemperature, StringFormat='{}{0:F1}'}" VerticalAlignment="Center" />
+            </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="speed" VerticalAlignment="Center" />
-                        <Slider Minimum="1" Maximum="60" Value="{Binding Speed}" Width="120" />
-                        <TextBlock Text="{Binding Speed}" VerticalAlignment="Center" />
-                    </StackPanel>
-                </StackPanel>
-            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="speed" VerticalAlignment="Center" />
+                <Slider Minimum="1" Maximum="60" Value="{Binding Speed}" Width="120" />
+                <TextBlock Text="{Binding Speed}" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
 
+        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="8">
             <controls:HistoryPlotControl History="{Binding History}"
-                                         ComfortTemperature="{Binding ComfortTemperature}" />
+                                            ComfortTemperature="{Binding ComfortTemperature}" />
 
             <controls:NetworkPlotControl Activations="{Binding CurrentSnapshot.Activations}"
                                         ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}" />
 
             <controls:MealPlotControl MealIntervals="{Binding CurrentSnapshot.MealIntervals}" />
         </StackPanel>
-    </ScrollViewer>
 
+        <!-- (1,1) reserved for an upcoming panel. -->
+    </Grid>
 </Window>
