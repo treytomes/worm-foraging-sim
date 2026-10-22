@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
@@ -10,8 +11,30 @@ namespace WormForaging.App.Controls;
 /// <summary>
 /// Custom control that renders steps per meal.
 /// </summary>
+/// <remarks>
+/// The control has no intrinsic size: it fills its container and derives every drawing coordinate
+/// from its own <see cref="Visual.Bounds"/> each render. A fixed-height title band is reserved at
+/// the top so the caption never overlays the plotted series.
+/// </remarks>
 public sealed class MealPlotControl : Control
 {
+    #region Constants
+
+    /// <summary>Height of the reserved title band, in pixels.</summary>
+    private const double TitleBandHeight = 16.0;
+
+    /// <summary>Inner padding around the plotted area, in pixels.</summary>
+    private const double Padding = 6.0;
+
+    /// <summary>Font size of the title caption.</summary>
+    private const double TitleFontSize = 10.0;
+
+    /// <summary>Maximum number of recent meals plotted.</summary>
+    private const int RecentMealCount = 40;
+
+    /// <summary>Floor for the y-axis maximum so a flat low series still renders.</summary>
+    private const double MinimumYRange = 100.0;
+
     /// <summary>
     /// Defines the <see cref="MealIntervals"/> property.
     /// </summary>
@@ -23,6 +46,22 @@ public sealed class MealPlotControl : Control
     public static readonly StyledProperty<IReadOnlyList<long>?> MealIntervalsProperty =
         AvaloniaProperty.Register<MealPlotControl, IReadOnlyList<long>?>(nameof(MealIntervals));
 
+    #endregion
+
+    #region Constructors
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MealPlotControl"/> class.
+    /// </summary>
+    public MealPlotControl()
+    {
+        MinHeight = 60;
+    }
+
+    #endregion
+
+    #region Properties
+
     /// <summary>
     /// Gets or sets the steps-per-meal series.
     /// </summary>
@@ -32,14 +71,9 @@ public sealed class MealPlotControl : Control
         set => SetValue(MealIntervalsProperty, value);
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MealPlotControl"/> class.
-    /// </summary>
-    public MealPlotControl()
-    {
-        Width = 360;
-        Height = 90;
-    }
+    #endregion
+
+    #region Methods
 
     /// <inheritdoc/>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -55,20 +89,44 @@ public sealed class MealPlotControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
-        Rect bounds = new(0, 0, Bounds.Width, Bounds.Height);
 
-        context.FillRectangle(new SolidColorBrush(Color.Parse("#1f1f1c")), bounds);
-
-        IReadOnlyList<long>? meals = MealIntervals;
-        if (meals == null || meals.Count == 0)
+        double width = Bounds.Width;
+        double height = Bounds.Height;
+        if (width <= 0 || height <= 0)
         {
-            var textBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
-            context.DrawText(new FormattedText("steps per meal", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 10, textBrush), new Point(10, 2));
             return;
         }
 
-        var recent = meals.TakeLast(40).ToList();
-        double mxv = Math.Max(100.0, recent.Max());
+        context.FillRectangle(new SolidColorBrush(Color.Parse("#1f1f1c")), new Rect(0, 0, width, height));
+
+        var textBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
+
+        IReadOnlyList<long>? meals = MealIntervals;
+        var recent = meals?.TakeLast(RecentMealCount).ToList();
+        string title = recent is { Count: > 0 }
+            ? $"steps per meal (max {Math.Max(MinimumYRange, recent.Max()):F0})"
+            : "steps per meal";
+        context.DrawText(
+            new FormattedText(title, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, TitleFontSize, textBrush),
+            new Point(Padding, 2));
+
+        if (recent is not { Count: > 0 })
+        {
+            return;
+        }
+
+        double plotTop = TitleBandHeight + Padding;
+        double plotBottom = height - Padding;
+        double plotLeft = Padding;
+        double plotWidth = width - Padding * 2;
+        double plotHeight = plotBottom - plotTop;
+        if (plotWidth <= 0 || plotHeight <= 0)
+        {
+            return;
+        }
+
+        double maxValue = Math.Max(MinimumYRange, recent.Max());
+        double denominator = Math.Max(recent.Count - 1, 1);
 
         var pen = new Pen(new SolidColorBrush(Color.Parse("#4fb88a")), 2);
         var geometry = new StreamGeometry();
@@ -76,8 +134,8 @@ public sealed class MealPlotControl : Control
         {
             for (int i = 0; i < recent.Count; i++)
             {
-                double x = 10 + i * (340.0 / Math.Max(recent.Count - 1, 1));
-                double y = 80 - recent[i] / mxv * 65.0;
+                double x = plotLeft + (i / denominator) * plotWidth;
+                double y = plotBottom - (recent[i] / maxValue) * plotHeight;
                 if (i == 0)
                 {
                     ctx.BeginFigure(new Point(x, y), false);
@@ -90,8 +148,7 @@ public sealed class MealPlotControl : Control
             ctx.EndFigure(false);
         }
         context.DrawGeometry(null, pen, geometry);
-
-        var textBrush2 = new SolidColorBrush(Color.Parse("#9a9a92"));
-        context.DrawText(new FormattedText($"steps per meal (max {mxv:F0})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, 10, textBrush2), new Point(10, 2));
     }
+
+    #endregion
 }

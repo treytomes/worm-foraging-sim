@@ -59,15 +59,26 @@
             </StackPanel>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="8">
-            <controls:HistoryPlotControl History="{Binding History}"
-                                            ComfortTemperature="{Binding ComfortTemperature}" />
+        <Grid Grid.Row="1" Grid.Column="0"
+              RowDefinitions="*,*,*"
+              RowSpacing="8">
+            <controls:HistoryPlotControl Grid.Row="0"
+                                         HorizontalAlignment="Stretch"
+                                         VerticalAlignment="Stretch"
+                                         History="{Binding History}"
+                                         ComfortTemperature="{Binding ComfortTemperature}" />
 
-            <controls:NetworkPlotControl Activations="{Binding CurrentSnapshot.Activations}"
-                                        ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}" />
+            <controls:NetworkPlotControl Grid.Row="1"
+                                         HorizontalAlignment="Stretch"
+                                         VerticalAlignment="Stretch"
+                                         Activations="{Binding CurrentSnapshot.Activations}"
+                                         ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}" />
 
-            <controls:MealPlotControl MealIntervals="{Binding CurrentSnapshot.MealIntervals}" />
-        </StackPanel>
+            <controls:MealPlotControl Grid.Row="2"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      MealIntervals="{Binding CurrentSnapshot.MealIntervals}" />
+        </Grid>
 
         <!-- (1,1) reserved for an upcoming panel. -->
     </Grid>
