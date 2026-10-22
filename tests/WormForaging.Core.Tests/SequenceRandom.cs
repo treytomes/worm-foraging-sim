@@ -12,8 +12,17 @@ namespace WormForaging.Core.Tests;
 internal sealed class SequenceRandom : IRandom
 {
     private readonly Queue<double> _doubles;
+    private readonly double[] _initial;
 
-    public SequenceRandom(params double[] doubles) => _doubles = new Queue<double>(doubles);
+    public SequenceRandom(params double[] doubles)
+    {
+        _initial = doubles;
+        _doubles = new Queue<double>(doubles);
+    }
+
+    public void Reset() => _doubles.Clear();
+
+    public void Reseed(ulong seed, ulong sequence = 0) => _doubles.Clear();
 
     public double NextDouble() => _doubles.Dequeue();
 

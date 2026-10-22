@@ -28,6 +28,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _homeostasisEnabled = true;
     private SimulationSnapshot? _currentSnapshot;
     private List<(double X, double Y)> _trail = new();
+    private readonly List<(double Energy, double BodyTemp)> _historyBuffer = new();
+    private IReadOnlyList<(double Energy, double BodyTemp)> _history = Array.Empty<(double, double)>();
     private string _statusText = string.Empty;
 
     #endregion
@@ -63,6 +65,7 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         _timer.Start();
 
         UpdateSnapshot();
+        AppendHistorySample();
         _logger.LogInformation("Main view model initialized with seed {Seed} from {Source}", _simulationStartup.Seed, _simulationStartup.Source);
     }
 
@@ -193,6 +196,20 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<(double X, double Y)> Trail => _trail;
 
     /// <summary>
+    /// Gets the rolling history of energy and body temperature.
+    /// </summary>
+    /// <remarks>
+    /// Each update replaces this with a fresh array reference rather than mutating one in place:
+    /// a bound control only re-renders when its styled property changes value, and a stable
+    /// mutable reference never looks changed.
+    /// </remarks>
+    public IReadOnlyList<(double Energy, double BodyTemp)> History
+    {
+        get => _history;
+        private set => SetProperty(ref _history, value);
+    }
+
+    /// <summary>
     /// Gets the status text.
     /// </summary>
     public string StatusText
@@ -213,15 +230,17 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     private void Reset()
     {
         _trail.Clear();
-
+        _historyBuffer.Clear();
+        History = Array.Empty<(double, double)>();
         _random.Reset();
         _simulation = new(_config, _random)
         {
             ExploreTemperature = _exploreTemperature,
             HomeostasisEnabled = _homeostasisEnabled,
-            Mode = _mode
+            Mode = _mode,
         };
         UpdateSnapshot();
+        AppendHistorySample();
     }
 
     private void SwapSenses()
@@ -242,8 +261,8 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         UpdateTrail();
+        AppendHistorySample();
         UpdateSnapshot();
-        RaisePropertyChanged(nameof(CurrentSnapshot));
         RaisePropertyChanged(nameof(Trail));
     }
 
@@ -260,7 +279,24 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
         {
             _trail.RemoveAt(0);
         }
-        RaisePropertyChanged(nameof(Trail));
+    }
+
+    private void AppendHistorySample()
+    {
+        if (_simulation == null)
+        {
+            return;
+        }
+
+        var snap = _simulation.Snapshot();
+        _historyBuffer.Add((snap.Energy, snap.BodyTemperature));
+        if (_historyBuffer.Count > 240)
+        {
+            _historyBuffer.RemoveAt(0);
+        }
+
+        // Hand the control a fresh reference so its binding actually re-renders.
+        History = _historyBuffer.ToArray();
     }
 
     private void UpdateSnapshot()
