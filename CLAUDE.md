@@ -36,14 +36,17 @@ original design notes and rationale from the prototype author.
     softmax `Policy`, inverse-CDF `Select`) ✓ · `LearningRule` + `LearningMode`
     (three-factor update; owns eligibility + reward prediction) ✓ · `Simulation` step loop +
     `SimulationSnapshot` (wires it all in prototype order; bit-identical from a seed) ✓.
-    **Phases 0 and 1 are complete: Core + Avalonia UI ported (parity accepted qualitatively by eye —
-    the browser oracle is unseeded `Math.random`/`Float32`, so there is no numeric match), and the
-    headless harness has produced the first measured baseline. 143 tests, Core ~99% line. _Measured_
-    (10 seeds × 20k steps, default config): three-factor forages ~50× more than either control
-    (~276 meals vs ~6 Hebbian / ~11 frozen) and survives while both controls starve; plain Hebbian is
-    no better than frozen. Every constant is still a prototype guess. Next is Phase 2: the
-    swap-back / savings metric.** Order follows the prototype's `step()`; see `TODO.md` for the live
-    checklist and the full baseline table.
+    **Phases 0–2 are complete: Core + Avalonia UI ported (parity accepted qualitatively by eye — the
+    browser oracle is unseeded `Math.random`/`Float32`, so there is no numeric match), and the headless
+    harness has produced two measured results. 143 tests, Core ~99% line. _Measured_ (10 seeds × 20k
+    steps, default config): three-factor forages ~50× more than either control (~276 meals vs ~6
+    Hebbian / ~11 frozen) and survives while both starve; plain Hebbian is no better than frozen.
+    _Phase 2 (`--experiment swap`)_: repeated sense-swaps show **no savings** — recovery after a swap
+    (collapse to ≈0, re-climb over ~6–7k steps) is no faster for a familiar mapping than a novel one,
+    confirming the author's prediction (the readout just overwrites). Every constant is still a
+    prototype guess. Next is Phase 3 (slow/fast weights, replay, scaling, delayed reward, hidden-layer
+    plasticity, evolved connectome).** Order follows the prototype's `step()`; see `TODO.md` for the
+    live checklist and the full result tables.
   - **Component seam:** `Network` holds the fixed reservoir only; `MotorLayer` holds the learned
     readout `Wo`; `LearningRule` holds the eligibility trace + reward-prediction state and updates
     `Wo` through `MotorLayer`'s flat `Get/SetReadoutWeight`. The three-factor update is **local by
@@ -87,12 +90,17 @@ original design notes and rationale from the prototype author.
 - `tests/WormForaging.Core.Tests/` — xUnit. Determinism and parity tests.
 - `src/WormForaging.Harness/` — headless console runner for N-seed experiments. Same host/CLI/
   `appsettings.yaml`/DI/Serilog stack as the App (its own thin `HarnessHostBuilder`, no shared hosting
-  assembly — Core stays pure). Runs N seeds × {full, hebbian, frozen} **paired by seed** (one seed ⇒
-  identical starting world/network/readout for all three modes, so only the learning rule differs),
-  and writes `summary.csv` / `timeseries.csv` / `aggregate.csv` to the git-ignored repo-root
-  `results/`. Knobs live in the `Harness:` config section with `--seeds/--base-seed/--steps/--sample/
-  --out` overrides. Discomfort is recovered as `|bodyTemp − comfort|` from the snapshot, so the
-  harness reads Core without changing it. 10 seeds × 20k steps ≈ 2.6s.
+  assembly — Core stays pure). Two experiments, chosen with `--experiment`:
+  - `baseline` (default, Phase 1): N seeds × {full, hebbian, frozen} **paired by seed** (one seed ⇒
+    identical starting world/network/readout for all three modes, so only the learning rule differs);
+    writes `summary.csv` / `timeseries.csv` / `aggregate.csv`. Knobs `--seeds/--base-seed/--steps/--sample`.
+  - `swap` (Phase 2): warm the Full learner on Identity, then toggle the mapping every `segment` steps
+    for `swaps` cycles, measuring meals-per-epoch recovery; writes `swap_cycles.csv` /
+    `swap_recovery.csv` / `swap_savings.csv`. Knobs under `Harness:Swap:`, `--warmup/--segment/--swaps`.
+
+  All CSVs go to the git-ignored repo-root `results/`. Discomfort/meals are read from the snapshot
+  (`|bodyTemp − comfort|` for discomfort), so the harness reads Core without changing it. 10 seeds ×
+  20k steps ≈ 2.6s (baseline); the default swap run (10 × 140k steps) ≈ 6s.
 
 Target: **.NET 10**, **Avalonia 11.3**, **Prism.Core** (BindableBase) + **Microsoft.Extensions.Hosting/DI** + **Serilog** — matching the HyperSpace framework.
 

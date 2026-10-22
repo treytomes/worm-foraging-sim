@@ -44,6 +44,21 @@ internal static class HarnessHostBuilder
     /// <summary>Default output directory (relative to the config directory / repo root).</summary>
     private const string DEFAULT_OUTPUT_DIR = "results";
 
+    /// <summary>Default identity-mapping warm-up steps for the swap experiment.</summary>
+    private const int DEFAULT_SWAP_WARMUP = 20_000;
+
+    /// <summary>Default steps between swaps.</summary>
+    private const int DEFAULT_SWAP_SEGMENT = 20_000;
+
+    /// <summary>Default number of swap events.</summary>
+    private const int DEFAULT_SWAP_SWAPS = 6;
+
+    /// <summary>Default early recovery window after each swap.</summary>
+    private const int DEFAULT_SWAP_WINDOW = 4_000;
+
+    /// <summary>Default epoch length (recovery-curve resolution) for the swap experiment.</summary>
+    private const int DEFAULT_SWAP_EPOCH = 1_000;
+
     #endregion
 
     #region Methods
@@ -71,10 +86,11 @@ internal static class HarnessHostBuilder
         builder.Logging.ClearProviders();
         builder.Logging.AddSerilog(serilog, dispose: true);
 
-        var settings = ResolveExperimentSettings(options, builder.Configuration, configDir);
-        builder.Services.AddSingleton(settings);
+        builder.Services.AddSingleton(ResolveExperimentSettings(options, builder.Configuration, configDir));
+        builder.Services.AddSingleton(ResolveSwapSettings(options, builder.Configuration, configDir));
         builder.Services.AddSingleton<Core.SimConfig>();
         builder.Services.AddSingleton<ExperimentRunner>();
+        builder.Services.AddSingleton<SwapExperimentRunner>();
 
         return builder.Build();
     }
@@ -169,6 +185,61 @@ internal static class HarnessHostBuilder
         }
 
         return new ExperimentSettings(seeds, baseSeed, steps, sample, Path.GetFullPath(outputDir));
+    }
+
+    /// <summary>
+    /// Resolves the swap/savings experiment knobs. Seeds, base seed, and output directory are shared
+    /// with the baseline experiment (same <c>Harness:</c> keys and <c>--seeds/--base-seed/--out</c>);
+    /// the swap-specific knobs live under <c>Harness:Swap:</c>. Validates that the step counts are
+    /// multiples of the epoch length and that the recovery window fits inside a segment and warm-up.
+    /// </summary>
+    private static SwapSettings ResolveSwapSettings(HarnessOptions options, IConfiguration configuration, string configDir)
+    {
+        int seeds = Resolve(options.Seeds, configuration["Harness:Seeds"], DEFAULT_SEEDS, int.TryParse);
+        ulong baseSeed = Resolve(options.BaseSeed, configuration["Harness:BaseSeed"], DEFAULT_BASE_SEED, ulong.TryParse);
+        int warmup = Resolve(options.Warmup, configuration["Harness:Swap:WarmupSteps"], DEFAULT_SWAP_WARMUP, int.TryParse);
+        int segment = Resolve(options.Segment, configuration["Harness:Swap:SegmentSteps"], DEFAULT_SWAP_SEGMENT, int.TryParse);
+        int swaps = Resolve(options.Swaps, configuration["Harness:Swap:Swaps"], DEFAULT_SWAP_SWAPS, int.TryParse);
+        int window = Resolve<int>(null, configuration["Harness:Swap:RecoveryWindowSteps"], DEFAULT_SWAP_WINDOW, int.TryParse);
+        int epoch = Resolve<int>(null, configuration["Harness:Swap:EpochSteps"], DEFAULT_SWAP_EPOCH, int.TryParse);
+
+        var outSetting = options.OutputDirectory ?? configuration["Harness:OutputDirectory"] ?? DEFAULT_OUTPUT_DIR;
+        var outputDir = Path.IsPathRooted(outSetting) ? outSetting : Path.Combine(configDir, outSetting);
+
+        if (seeds < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), seeds, "Seeds must be at least 1.");
+        }
+
+        if (swaps < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), swaps, "Swaps must be at least 1.");
+        }
+
+        if (epoch < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), epoch, "Epoch steps must be at least 1.");
+        }
+
+        if (warmup < epoch || segment < epoch || window < epoch)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options),
+                "Warmup, segment, and recovery window must each be at least one epoch.");
+        }
+
+        if (warmup % epoch != 0 || segment % epoch != 0 || window % epoch != 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options),
+                "Warmup, segment, and recovery window must be whole multiples of the epoch length.");
+        }
+
+        if (window > segment || window > warmup)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options),
+                "Recovery window must fit inside both a segment and the warm-up.");
+        }
+
+        return new SwapSettings(seeds, baseSeed, warmup, segment, swaps, window, epoch, Path.GetFullPath(outputDir));
     }
 
     /// <summary>A parser delegate matching <c>int.TryParse</c> / <c>ulong.TryParse</c>.</summary>

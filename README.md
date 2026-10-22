@@ -40,7 +40,8 @@ condition, and proper before/after metrics instead of eyeballing a canvas.
 
 ## Status
 
-🟢 **Phase 1 complete — the first baseline is measured, and three-factor learning wins decisively.**
+🟢 **Phases 1–2 complete — the baseline is measured (three-factor wins decisively) and the
+swap-back / savings test is in (no savings, as predicted).**
 The whole simulation is ported with parity tests against the prototype (`SimConfig`, `World`, `Body`,
 `Senses` + the sense-swap, `Network`, `MotorLayer`, `LearningRule`, and the `Simulation` step loop) —
 143 tests at ~99% line coverage, a given seed reproduces a run bit-for-bit, and the Avalonia UI is
@@ -61,10 +62,18 @@ plainly: **plain Hebbian is no better than frozen** (slightly worse on the mean)
 "fire together, wire together" is actively unhelpful here, which is exactly the case for the third
 (neuromodulatory) factor. See [`TODO.md`](TODO.md) for the full table and caveats.
 
+**Phase 2 (swap-back / savings) is also done, and it confirms the author's prediction — _no savings_.**
+Repeatedly flipping the sensor→direction mapping craters foraging to ≈0 each time; it re-climbs over
+~6–7k steps back to competence, and that recovery is **no faster when the mapping has been seen
+before** than when it is met fresh. Learning only rewrites the readout, so each swap overwrites the
+last mapping with no trace to resume from. That is the green light for Phase 3: slow/fast weights are
+aimed at a real catastrophic-overwrite gap. Run it with `--experiment swap`.
+
 What is verified vs. guessed:
 
 - *Measured (seeded C# runs):* three-factor beats both controls decisively at the default config;
-  plain Hebbian ≈ frozen. The numbers above.
+  plain Hebbian ≈ frozen; and repeated sense-swaps show **no savings** — relearning a familiar
+  mapping is no faster than a novel one. The numbers above and in [`TODO.md`](TODO.md).
 - *Guessed / untuned:* essentially every constant — reward weights, the absorption→reward
   scaling, learning rate, trace decay, the Hebbian mode's arbitrary `0.6` modulator. The baseline
   says the rule works *at the untuned defaults*; it is not a tuned claim. Still hypotheses.

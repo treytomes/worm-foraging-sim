@@ -20,6 +20,18 @@ because most seeds eat 0–6 meals; **use meals-count, not steps/meal, as throug
 near zero.** Discomfort is recovered in the harness as `|bodyTemp − comfort|` from the snapshot, so
 Core stayed untouched. Next: Phase 2 (swap-back / savings metric).
 
+**PHASE 2 DONE (2026-10-22): the author's "no savings" prediction is CONFIRMED.** Added
+`--experiment swap` to the harness: warm the Full learner on Identity, then toggle the mapping every
+`segment` steps for `swaps` cycles, measuring meals-per-epoch recovery after each swap (writes
+`swap_cycles.csv` / `swap_recovery.csv` / `swap_savings.csv`; knobs under `Harness:Swap:`). Measured
+(10 seeds × (20k warmup + 6×20k)): every swap craters foraging to ≈0, then it re-climbs over ~6–7k
+steps to the competent plateau (recovery curve 0.1→0.7→3.4→6.0→9.9→13.2→15.0 then flat). The
+recovery-window meal count is **flat across exposures within noise** — re-entering a previously learned
+mapping is no faster than meeting it fresh. The readout just overwrites; no retained trace. **This
+green-lights Phase 3** (slow/fast weights address a real catastrophic-overwrite gap). Caveat: the
+window scalar is noisy (SD≈mean); the per-epoch curves and segment totals corroborate it. Next:
+Phase 3 (slow/fast weights, replay, scaling, delayed reward, hidden-layer plasticity, evolved connectome).
+
 
 Porting `worm_foraging.html` (frozen oracle) to `WormForaging.Core` one slice at a time,
 each committed with parity tests; Core line coverage stays ~99%. Order follows the

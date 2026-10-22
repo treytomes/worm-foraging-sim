@@ -115,12 +115,26 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       metric when meals are near zero; steps/meal is not.** All numbers are from the *guessed*
       prototype constants — the result is "the rule works at the untuned defaults," not a tuned claim.
 
-## Phase 2 — Swap-back / savings metric (handoff step 2)
+## Phase 2 — Swap-back / savings metric (handoff step 2)  ← ✓ complete
 
-- [ ] Repeatedly swap senses; measure whether relearning speeds up (savings).
-- [ ] Test the prototype author's prediction: **no savings**, because the readout just
-      overwrites. Confirming or refuting this gates whether slow/fast weights solve a real
-      problem. Report plainly either way.
+- [x] Repeatedly swap senses; measure whether relearning speeds up (savings). Added to the harness as
+      `--experiment swap`: warm the Full learner up on Identity, then toggle the mapping every
+      `segment` steps for `swaps` cycles (Swapped, Identity, Swapped, …), measuring recovery as meals
+      per epoch after each swap. Writes `swap_cycles.csv`, `swap_recovery.csv` (per-epoch curves), and
+      `swap_savings.csv` (by mapping × exposure count). Knobs under `Harness:Swap:` with
+      `--warmup/--segment/--swaps` overrides.
+- [x] **Author's prediction — *no savings* — CONFIRMED** *(measured, 10 seeds × (20k warmup + 6 × 20k
+      segments), prototype-default config, 2026-10-22).* After every swap, foraging collapses to ≈0
+      and re-climbs over ~6–7k steps back to the competent plateau (recovery curve, mean meals per
+      1000 steps since a swap: `0.1, 0.7, 3.4, 6.0, 9.9, 13.2, 15.0, …` then flat ~13–15 ≈ the warm-up
+      rate). The recovery-window (first 4000 steps) meal count is **flat across exposures within
+      noise** — Identity re-entries #2/#3/#4 = 8.5/11.8/15.1, Swapped #1/#2/#3 = 11.0/7.9/6.9, all
+      ±8–18 — i.e. re-entering a *previously learned* mapping is no faster than meeting it fresh.
+      The readout just overwrites; there is no retained trace to resume from, exactly as predicted.
+      **This is the green light for Phase 3:** slow/fast weights are aimed at a *real* gap (catastrophic
+      overwrite on swap), not an imagined one. *Caveat:* the window scalar is noisy (SD ≈ mean) because
+      only single-digit meals land in 4000 disrupted steps; the per-epoch curves and full-segment
+      totals (≈223–238 meals, vs ~276 undisturbed) corroborate full-but-slow recovery each cycle.
 
 ## Phase 3+ — the open-ended experiments (handoff steps 3–8)
 

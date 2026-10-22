@@ -33,3 +33,20 @@ Harness:
   SampleInterval: 100
   # Directory the CSV files are written to, relative to this file's location (the repo root).
   OutputDirectory: results
+
+  # Phase 2 swap-back / savings experiment (run with --experiment swap). Warm the three-factor
+  # learner up on the identity mapping, then toggle the sensor->direction mapping every SegmentSteps
+  # for Swaps cycles, measuring how fast it reforages each time. Shares Seeds/BaseSeed/OutputDirectory
+  # above. WarmupSteps, SegmentSteps, and RecoveryWindowSteps must be whole multiples of EpochSteps.
+  Swap:
+    # Identity-mapping steps before the first swap (long enough to forage well).
+    WarmupSteps: 20000
+    # Steps between swaps.
+    SegmentSteps: 20000
+    # Number of swap events; they alternate Swapped, Identity, Swapped, ... so each mapping is
+    # re-entered several times (the savings test needs repeated exposures).
+    Swaps: 6
+    # Early post-swap window whose meal count is the headline "how fast did it bounce back" scalar.
+    RecoveryWindowSteps: 4000
+    # Resolution of the recovery curve, and the stepping granularity.
+    EpochSteps: 1000
