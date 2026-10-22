@@ -60,9 +60,6 @@ public static class AppHostBuilder
         builder.Services.AddSingleton(simulation);
         builder.Services.AddSingleton<IRandom>(_ => new Pcg32Random(simulation.Seed));
         builder.Services.AddSingleton<Core.SimConfig>();
-        builder.Services.AddSingleton(sp =>
-            new Core.Simulation(sp.GetRequiredService<Core.SimConfig>(), sp.GetRequiredService<IRandom>())
-        );
 
         builder.Services.AddSingleton<MainWindowViewModel>();
 

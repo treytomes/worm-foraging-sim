@@ -18,6 +18,7 @@
                 <controls:ArenaControl Grid.Column="0"
                                        SimulationSnapshot="{Binding CurrentSnapshot}"
                                        Trail="{Binding Trail}"
+                                       ComfortTemperature="{Binding ComfortTemperature}"
                                        Width="360"
                                        Height="360"
                                        HorizontalAlignment="Left" />
@@ -53,7 +54,8 @@
                 </StackPanel>
             </Grid>
 
-            <controls:HistoryPlotControl History="{Binding History}" />
+            <controls:HistoryPlotControl History="{Binding History}"
+                                         ComfortTemperature="{Binding ComfortTemperature}" />
 
             <controls:NetworkPlotControl Activations="{Binding CurrentSnapshot.Activations}"
                                         ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}" />

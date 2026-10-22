@@ -210,6 +210,11 @@ public sealed class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
+    /// Gets the comfortable body temperature the plots use to mark thermal comfort.
+    /// </summary>
+    public double ComfortTemperature => _config.ComfortTemperature;
+
+    /// <summary>
     /// Gets the status text.
     /// </summary>
     public string StatusText

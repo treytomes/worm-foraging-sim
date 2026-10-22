@@ -17,6 +17,9 @@ public sealed class ArenaControl : Control
 {
     #region Constants
 
+    /// <summary>Thermal deviation below which the discomfort ring is not drawn.</summary>
+    private const double RingDeadband = 0.08;
+
     /// <summary>
     /// Defines the <see cref="SimulationSnapshot"/> property.
     /// </summary>
@@ -34,7 +37,13 @@ public sealed class ArenaControl : Control
     /// </summary>
     public static readonly StyledProperty<double> ScaleProperty =
         AvaloniaProperty.Register<ArenaControl, double>(nameof(Scale), 9.0);
-    
+
+    /// <summary>
+    /// Defines the <see cref="ComfortTemperature"/> property.
+    /// </summary>
+    public static readonly StyledProperty<double> ComfortTemperatureProperty =
+        AvaloniaProperty.Register<ArenaControl, double>(nameof(ComfortTemperature), double.NaN);
+
     #endregion
 
     #region Constructors
@@ -79,6 +88,16 @@ public sealed class ArenaControl : Control
         set => SetValue(ScaleProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the comfortable body temperature, used to flag thermal discomfort with a ring.
+    /// When unset (<see cref="double.NaN"/>), the ring is not drawn.
+    /// </summary>
+    public double ComfortTemperature
+    {
+        get => GetValue(ComfortTemperatureProperty);
+        set => SetValue(ComfortTemperatureProperty, value);
+    }
+
     #endregion
 
     #region Methods
@@ -105,7 +124,10 @@ public sealed class ArenaControl : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == SimulationSnapshotProperty || change.Property == TrailProperty || change.Property == ScaleProperty)
+        if (change.Property == SimulationSnapshotProperty
+            || change.Property == TrailProperty
+            || change.Property == ScaleProperty
+            || change.Property == ComfortTemperatureProperty)
         {
             InvalidateVisual();
         }
@@ -175,9 +197,9 @@ public sealed class ArenaControl : Control
             5);
 
         // Temperature ring
-        var comfortTemp = 0.55;
+        var comfortTemp = ComfortTemperature;
         var dev = snapshot.BodyTemperature - comfortTemp;
-        if (Math.Abs(dev) > 0.08)
+        if (!double.IsNaN(comfortTemp) && Math.Abs(dev) > RingDeadband)
         {
             var ringColor = dev > 0 ? Color.Parse("#f08a4b") : Color.Parse("#4f8fd8");
             context.DrawEllipse(
