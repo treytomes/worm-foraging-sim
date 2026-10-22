@@ -31,7 +31,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
 - [x] Move `Assets` → repo-root `./assets`; linked into Avalonia via `<Link>`.
 - [x] Repo standards: warnings-as-errors + required XML docs (`Directory.Build.props`) + 80%
       line-coverage gate (coverlet).
-- [ ] **Smoke-run the app** to confirm the host boots, reads YAML, logs to console + file, and the
+- [x] **Smoke-run the app** to confirm the host boots, reads YAML, logs to console + file, and the
       seeded draws render (not yet launched this session).
 - [x] `SimConfig` — every prototype constant becomes a named, documented field (one `record`;
       all defaults = prototype values; `double` not `float32`, parity is qualitative not bit-exact).
@@ -41,7 +41,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
 - [x] Port the body: position + arena clamp, body-temperature lag `+=0.08·(temp−body)`, eating,
       gut absorption `min(gut,0.01)`, energy balance `+ab−0.002−0.006·d1`, meal-interval log.
       `Body` reads `World` but holds no sensing/net/learning; 16 tests, Core at 99.5% line cov.
-- [ ] Port the senses: 4 odor + 4 heat (gated, Weber-normalized) + 2 internal drives.
+- [x] Port the senses: `Senses` builds the 8-channel vector — 4 odor (hunger-gated, Weber-normalized
+      `gate·10·(c−mo)/(mo+1e-6)`) + 4 heat (`(−dev·6)·6·(t−mt)`), differential so a flat field reads 0.
+      Swap is a first-class `SensePermutation` (Identity / Swapped / Toggle); shared N/E/S/W `Directions`
+      added. The "2 internal drives" (hunger, dev) are NOT in this vector — they enter the network
+      directly, and are already exposed on `Body`. 23 tests (Senses + permutation), Core at 99.6%.
 - [ ] Port the network: 16 interneurons, sparse recurrent wiring, `tanh`, homeostatic gain.
 - [ ] Port motor layer + softmax action sampling — rewrite as a clean cumulative sample
       (the prototype's loop is correct but fragile; see handoff "known rough edges").
@@ -51,7 +55,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       stats readout. **Scope decision: Core-faithful, UI-lean** — exact simulation parity now,
       richer panels (energy/temp history, network+weights, steps-per-meal) added incrementally.
 - [ ] **Parity check:** with a fixed seed, confirm C# reproduces the prototype's qualitative
-      behaviour (learns, relearns after swap, needs compete). Document any intentional diffs.
+      behavior (learns, relearns after swap, needs compete). Document any intentional diffs.
       Core parity is the gate; the extra visual panels are not.
 
 ## Phase 1 — Headless harness + baselines (handoff step 1)
