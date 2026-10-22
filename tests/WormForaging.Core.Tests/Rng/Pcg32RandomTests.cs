@@ -133,6 +133,50 @@ public class Pcg32RandomTests
     }
 
     [Fact]
+    public void Reset_ReproducesTheSubsequentStream()
+    {
+        var rng = new Pcg32Random(seed: 424242UL, sequence: 7UL);
+
+        double[] first = Enumerable.Range(0, 500).Select(_ => rng.NextDouble()).ToArray();
+        rng.Reset();
+        double[] second = Enumerable.Range(0, 500).Select(_ => rng.NextDouble()).ToArray();
+
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public void Reset_ReturnsGeneratorToTheExactStateOfAFreshOne()
+    {
+        // Draw an *odd* number of Gaussians first so a Box-Muller spare is cached; a correct Reset
+        // must discard it, or the first post-reset Gaussian would echo pre-reset state.
+        var rng = new Pcg32Random(seed: 13UL, sequence: 2UL);
+        rng.NextGaussian();
+        rng.NextUInt();
+        rng.NextDouble();
+
+        rng.Reset();
+
+        var fresh = new Pcg32Random(seed: 13UL, sequence: 2UL);
+        Assert.Equal(fresh.NextGaussian(), rng.NextGaussian());
+        Assert.Equal(fresh.NextUInt(), rng.NextUInt());
+        Assert.Equal(fresh.NextDouble(), rng.NextDouble());
+    }
+
+    [Fact]
+    public void Reseed_AdoptsTheNewSeedAndSequenceStream()
+    {
+        var rng = new Pcg32Random(seed: 1UL);
+        rng.NextUInt(); // advance so state differs from any fresh construction
+
+        rng.Reseed(seed: 9001UL, sequence: 3UL);
+
+        var reference = new Pcg32Random(seed: 9001UL, sequence: 3UL);
+        uint[] actual = Enumerable.Range(0, 200).Select(_ => rng.NextUInt()).ToArray();
+        uint[] expected = Enumerable.Range(0, 200).Select(_ => reference.NextUInt()).ToArray();
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void InjectedAsIRandom_BehavesDeterministically()
     {
         // Guards the intended usage: components depend on IRandom, not the concrete type.

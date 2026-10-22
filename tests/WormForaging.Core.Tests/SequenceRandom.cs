@@ -20,9 +20,23 @@ internal sealed class SequenceRandom : IRandom
         _doubles = new Queue<double>(doubles);
     }
 
-    public void Reset() => _doubles.Clear();
+    /// <summary>Restores the scripted queue to its original contents.</summary>
+    public void Reset() => Restore();
 
-    public void Reseed(ulong seed, ulong sequence = 0) => _doubles.Clear();
+    /// <summary>
+    /// Restores the scripted queue. A scripted fake has no real seed, so the arguments are ignored;
+    /// this exists only to satisfy <see cref="IRandom"/> and mirror <see cref="Reset"/>'s semantics.
+    /// </summary>
+    public void Reseed(ulong seed, ulong sequence = 0) => Restore();
+
+    private void Restore()
+    {
+        _doubles.Clear();
+        foreach (double value in _initial)
+        {
+            _doubles.Enqueue(value);
+        }
+    }
 
     public double NextDouble() => _doubles.Dequeue();
 

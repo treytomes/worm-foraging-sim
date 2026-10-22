@@ -94,6 +94,12 @@ public sealed class Pcg32Random : IRandom
         StepState();
         _state += seed;
         StepState();
+
+        // Discard any half-used Box-Muller pair so a (re)seed returns the generator to the exact
+        // state of a freshly constructed one. Leaving a cached sample here would make the next
+        // NextGaussian return pre-reset data, silently breaking determinism after a Reset.
+        _hasSpareGaussian = false;
+        _spareGaussian = 0.0;
     }
 
     /// <inheritdoc />
