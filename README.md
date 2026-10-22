@@ -2,7 +2,7 @@
 
 A C. elegans-*inspired* foraging agent that learns online — **without backpropagation,
 gradients, or a feedforward error signal.** It forages for food and regulates its body
-temperature at the same time, and the two drives visibly compete for control of behaviour.
+temperature at the same time, and the two drives visibly compete for control of behavior.
 All learning is local plasticity gated by a single broadcast "how's it going" scalar
 (three-factor / neuromodulated Hebbian).
 
@@ -40,24 +40,34 @@ condition, and proper before/after metrics instead of eyeballing a canvas.
 
 ## Status
 
-🚧 **Phase 0 complete (ported + runnable); nothing measured yet.** The whole simulation is ported
-with parity tests against the prototype — `SimConfig`, `World`, `Body`, `Senses` (+ the sense-swap),
-`Network`, `MotorLayer`, `LearningRule`, and the `Simulation` step loop that runs them together —
-143 tests at ~99% line coverage, and a given seed reproduces a run bit-for-bit. The Avalonia UI is
-built too (arena, controls, and live energy/temperature, network-weight, and steps-per-meal panels),
-and the port was accepted as *qualitatively* matching the browser prototype by eye. What does *not*
-yet exist: the headless harness, and therefore **any end-to-end behavioral result**. Parity here is
-qualitative on purpose — the browser oracle runs an unseeded RNG in `Float32`, so there is no numeric
-match to check against; the C# port reproduces runs, but *measuring* whether the rule learns — and
-beats the Hebbian and frozen controls — is the next goal, not a finished result. See
-[`TODO.md`](TODO.md).
+🟢 **Phase 1 complete — the first baseline is measured, and three-factor learning wins decisively.**
+The whole simulation is ported with parity tests against the prototype (`SimConfig`, `World`, `Body`,
+`Senses` + the sense-swap, `Network`, `MotorLayer`, `LearningRule`, and the `Simulation` step loop) —
+143 tests at ~99% line coverage, a given seed reproduces a run bit-for-bit, and the Avalonia UI is
+built (arena, controls, and live energy/temperature, network-weight, and steps-per-meal panels),
+accepted as *qualitatively* matching the browser by eye. The headless `WormForaging.Harness` now runs
+N seeds × {full, hebbian, frozen}, paired by seed, and writes CSVs plus an aggregate table.
+
+First measured baseline *(10 seeds × 20 000 steps, prototype-default config)* — mean ± sample SD:
+
+| mode | meals eaten | mean energy | final energy |
+|---|---|---|---|
+| **Full (three-factor)** | **276.5 ± 34.2** | **0.933 ± 0.035** | **0.919 ± 0.202** |
+| Hebbian (fixed modulator) | 5.7 ± 10.1 | 0.021 ± 0.042 | 0.000 |
+| Frozen (no learning) | 11.0 ± 11.8 | 0.027 ± 0.033 | 0.028 ± 0.087 |
+
+Three-factor forages ~50× more and stays alive; both controls starve. A surprise worth stating
+plainly: **plain Hebbian is no better than frozen** (slightly worse on the mean) — reward-blind
+"fire together, wire together" is actively unhelpful here, which is exactly the case for the third
+(neuromodulatory) factor. See [`TODO.md`](TODO.md) for the full table and caveats.
 
 What is verified vs. guessed:
 
-- *Observed once in the browser:* three-factor learns, relearns after a sense swap, and the
-  two needs compete.
+- *Measured (seeded C# runs):* three-factor beats both controls decisively at the default config;
+  plain Hebbian ≈ frozen. The numbers above.
 - *Guessed / untuned:* essentially every constant — reward weights, the absorption→reward
-  scaling, learning rate, trace decay. Treated as hypotheses until a seeded run says otherwise.
+  scaling, learning rate, trace decay, the Hebbian mode's arbitrary `0.6` modulator. The baseline
+  says the rule works *at the untuned defaults*; it is not a tuned claim. Still hypotheses.
 
 ## Project layout
 
@@ -65,7 +75,7 @@ What is verified vs. guessed:
 src/WormForaging.Core/     simulation — pure, deterministic, no UI (the testable heart)
 src/WormForaging.App/      Avalonia MVVM front end — renders and drives Core
 tests/WormForaging.Core.Tests/   xUnit determinism + parity tests
-src/WormForaging.Harness/  (later) headless N-seed experiment runner
+src/WormForaging.Harness/  headless N-seed experiment runner — writes CSVs to results/
 worm_foraging.html         original prototype — kept as the parity reference oracle
 ```
 
@@ -76,7 +86,9 @@ Requires .NET 10.
 ```
 dotnet build
 dotnet test
-dotnet run --project src/WormForaging.App
+dotnet run --project src/WormForaging.App                       # the interactive Avalonia app
+dotnet run --project src/WormForaging.Harness                   # the baseline experiment → results/*.csv
+dotnet run --project src/WormForaging.Harness -- --seeds 20 --steps 50000   # a bigger run
 ```
 
 ## Inspiration

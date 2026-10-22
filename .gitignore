@@ -22,6 +22,9 @@ coverage*.xml
 # Runtime logs written by the app at the repo root
 logs/
 
+# CSV output written by the headless harness at the repo root
+results/
+
 # OS
 .DS_Store
 Thumbs.db

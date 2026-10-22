@@ -86,12 +86,34 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       after swap, needs compete). No intentional behavioral diffs noted. The *measured* full-vs-hebb-vs-
       frozen comparison is Phase 1, by the harness.
 
-## Phase 1 — Headless harness + baselines (handoff step 1)
+## Phase 1 — Headless harness + baselines (handoff step 1)  ← ✓ complete
 
-- [ ] `WormForaging.Harness` console runner: run N seeds × {full, hebb, frozen}.
-- [ ] Metrics: steps-per-meal, energy over time, discomfort over time; aggregate across seeds.
-- [ ] First measured baseline: does three-factor beat Hebbian and frozen, and by how much?
-      *Mark measured vs. guessed in the write-up.*
+- [x] `WormForaging.Harness` console runner: runs N seeds × {full, hebb, frozen}, **paired by seed**
+      (one seed ⇒ identical starting world/network/readout for all three modes, so the only
+      difference is the learning rule). Same host/CLI/`appsettings.yaml`/DI/Serilog stack as the App
+      (`Harness:` config section; `--seeds/--base-seed/--steps/--sample/--out` overrides). Writes
+      `summary.csv` (per mode×seed), `timeseries.csv` (sampled energy/discomfort/meals), and
+      `aggregate.csv` (mean±SD per mode), and logs the headline table. Output → repo-root `results/`
+      (git-ignored). 10 seeds × 20k steps runs in ~2.6s.
+- [x] Metrics: steps-per-meal (mean of meal intervals), energy over time, discomfort over time
+      (`|bodyTemp − comfort|`, recovered from the snapshot — Core untouched), meals eaten, final
+      energy; aggregated across seeds with sample SD (non-finite steps-per-meal from meal-less runs
+      dropped, with an `_n` column recording how many seeds contributed).
+- [x] **First measured baseline *(measured, 10 seeds × 20 000 steps, prototype-default config,
+      2026-10-22)*:** three-factor **decisively** beats both controls.
+      | mode | meals | steps/meal | mean energy | mean discomfort | final energy |
+      |---|---|---|---|---|---|
+      | **Full** | **276.5 ± 34.2** | **73.1 ± 9.3** | **0.933 ± 0.035** | **0.113 ± 0.009** | **0.919 ± 0.202** |
+      | Hebbian | 5.7 ± 10.1 | 2863 ± 2931 | 0.021 ± 0.042 | 0.255 ± 0.011 | 0.000 ± 0.000 |
+      | Frozen | 11.0 ± 11.8 | 2219 ± 1583 | 0.027 ± 0.033 | 0.245 ± 0.016 | 0.028 ± 0.087 |
+      Full forages ~50× more, keeps energy near full and survives; both controls starve to ~0.
+      **Surprises worth flagging:** (1) plain Hebbian (fixed `0.6` modulator) is *no better than
+      frozen* — on the mean it's slightly worse (5.7 vs 11.0 meals), i.e. reward-blind correlation is
+      actively unhelpful here, not a weak learner. Confirms the parking-lot suspicion about the
+      arbitrary `0.6`. (2) steps/meal variance on the controls is enormous because most seeds eat
+      0–6 meals, so the interval rides on one lucky meal — **meals-count is the robust throughput
+      metric when meals are near zero; steps/meal is not.** All numbers are from the *guessed*
+      prototype constants — the result is "the rule works at the untuned defaults," not a tuned claim.
 
 ## Phase 2 — Swap-back / savings metric (handoff step 2)
 

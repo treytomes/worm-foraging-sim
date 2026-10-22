@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/WormForaging.App/WormForaging.App.csproj" />
     <Project Path="src/WormForaging.Core/WormForaging.Core.csproj" />
+    <Project Path="src/WormForaging.Harness/WormForaging.Harness.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WormForaging.Core.Tests/WormForaging.Core.Tests.csproj" />

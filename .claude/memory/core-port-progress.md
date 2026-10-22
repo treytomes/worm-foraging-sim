@@ -5,6 +5,22 @@ metadata:
   type: project
 ---
 
+**PHASE 1 DONE (2026-10-22): first measured baseline is in, and three-factor wins decisively.**
+`WormForaging.Harness` console runner built on the same host/CLI/`appsettings.yaml`/DI/Serilog stack
+as the App (`Harness:` config section; paired-by-seed design — one seed gives all three modes an
+identical starting world/network/readout, so the only difference is the learning rule). Writes
+`summary.csv` / `timeseries.csv` / `aggregate.csv` to repo-root `results/` (git-ignored) and logs a
+headline table. 10 seeds × 20k steps in ~2.6s. **Result (measured, prototype-default *guessed*
+constants):** Full ≈ **276 meals**, mean energy 0.93, survives; Hebbian ≈ 5.7 meals and Frozen ≈ 11
+meals, both starve to ~0 energy. Full forages ~50× more and thermoregulates better (discomfort 0.11
+vs ~0.25). **Two surprises:** (1) plain Hebbian (fixed `0.6` modulator) is *no better than frozen* —
+slightly worse on the mean — so reward-blind correlation is actively unhelpful, not a weak learner
+(confirms the arbitrary-`0.6` parking-lot worry). (2) steps/meal variance on the controls is huge
+because most seeds eat 0–6 meals; **use meals-count, not steps/meal, as throughput when meals are
+near zero.** Discomfort is recovered in the harness as `|bodyTemp − comfort|` from the snapshot, so
+Core stayed untouched. Next: Phase 2 (swap-back / savings metric).
+
+
 Porting `worm_foraging.html` (frozen oracle) to `WormForaging.Core` one slice at a time,
 each committed with parity tests; Core line coverage stays ~99%. Order follows the
 prototype's `step()`.

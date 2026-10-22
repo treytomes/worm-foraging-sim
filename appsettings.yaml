@@ -17,3 +17,19 @@ Simulation:
   # Default RNG seed for reproducible runs. The --seed command-line option overrides this; when
   # neither is set the app chooses a random seed and logs it so the run can be reproduced.
   Seed: 1
+
+# Headless experiment runner (src/WormForaging.Harness). Each knob here is a default; the matching
+# command-line option (--seeds, --base-seed, --steps, --sample, --out) overrides it. The harness runs
+# every seed under all three learning modes (full, hebbian, frozen), paired by seed.
+Harness:
+  # Number of distinct seeds run per mode.
+  Seeds: 10
+  # First seed; the run uses BaseSeed .. BaseSeed+Seeds-1. Each seed fixes an identical starting
+  # world/network/readout shared across the three modes, so the modes differ only by learning rule.
+  BaseSeed: 1
+  # Simulation steps per run.
+  Steps: 20000
+  # Record a time-series sample (energy, discomfort, cumulative meals) every this many steps.
+  SampleInterval: 100
+  # Directory the CSV files are written to, relative to this file's location (the repo root).
+  OutputDirectory: results
