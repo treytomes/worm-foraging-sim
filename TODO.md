@@ -52,8 +52,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       here — it's the motor/learning layer's. Step contract: `Activate` → (motor/learning read it)
       → `AdaptAndCommit`. First component with random init, so it anchors determinism. 17 tests
       incl. exact forward-formula parity; Core at 99.7% line / 100% method.
-- [ ] Port motor layer + softmax action sampling — rewrite as a clean cumulative sample
-      (the prototype's loop is correct but fragile; see handoff "known rough edges").
+- [x] Port motor layer + softmax action sampling: `MotorLayer` owns the readout `Wo` (the only
+      weights learning changes), `Policy` = softmax(`Wo·x / T`) with max-shift, `Select` samples it.
+      Rewrote the prototype's fragile guarded sampler as a plain inverse-CDF walk — verified
+      equivalent (same buckets, same `K-1` fallback). Exposes flat `Get/SetReadoutWeight` for the
+      three-factor rule; `MotorDecision` carries choice + probabilities (the `one-hot − p` term).
+      18 tests incl. scripted-draw bucket parity + 200k-trial frequency check; Core at 99.8%.
 - [ ] Port the learning rule: eligibility trace, modulator, three modes (full/hebb/frozen).
 - [ ] Avalonia UI (custom `Control.Render` + `DispatcherTimer`): arena first, plus the
       essential controls (pause, reset, swap, mode, homeostasis, explore, speed) and a basic
