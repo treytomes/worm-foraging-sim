@@ -5,7 +5,7 @@ headless harness exists — otherwise every claim is just a browser eyeball.
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guessed)* for results.
 
-## Phase 0 — Port to C# / Avalonia at feature parity  ← Core complete; UI + parity check remain
+## Phase 0 — Port to C# / Avalonia at feature parity  ← ✓ complete
 
 - [x] Scaffold solution: `Core`, `App`, `Core.Tests` projects; `.slnx`; `.gitignore`.
 - [x] **`IRandom` interface** in `Core` — the single RNG abstraction every stochastic path
@@ -72,13 +72,19 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       16 end-to-end tests: **bit-identical runs from a seed**, Full changes `Wo` / Frozen never does,
       bounded state over 5k steps, eat path fires. Core at 98.6%. **Core is complete.**
       *(No behavioral claim yet — full-vs-frozen meal rates etc. are Phase 1, by the harness.)*
-- [ ] Avalonia UI (custom `Control.Render` + `DispatcherTimer`): arena first, plus the
-      essential controls (pause, reset, swap, mode, homeostasis, explore, speed) and a basic
-      stats readout. **Scope decision: Core-faithful, UI-lean** — exact simulation parity now,
-      richer panels (energy/temp history, network+weights, steps-per-meal) added incrementally.
-- [ ] **Parity check:** with a fixed seed, confirm C# reproduces the prototype's qualitative
-      behavior (learns, relearns after swap, needs compete). Document any intentional diffs.
-      Core parity is the gate; the extra visual panels are not.
+- [x] Avalonia UI (custom `Control.Render` + `DispatcherTimer`): arena (worm, food, lamp, odor/heat
+      `RadialGradientBrush` glows, trail, thermal ring) + all controls (pause, reset, swap, mode,
+      homeostasis, explore, speed) + stats readout, plus the richer panels — energy/temp history,
+      interneuron activations + readout-weight heatmap, and steps-per-meal. Each custom `Control`
+      redraws only when one of *its own* styled properties changes value: bind at least one property
+      to the per-tick fresh snapshot (or hand out a fresh reference), and keep the control's property
+      type identical to the snapshot's (a mismatched element type makes the binding silently yield
+      null — that was the steps-per-meal panel's blank-until-fixed bug).
+- [x] **Parity check:** accepted as qualitatively equivalent by eye (Trey, 2026-10-22). The check is
+      *qualitative* by construction — the frozen prototype uses an unseeded `Math.random` + `Float32`,
+      so there is no numeric match to the browser; "parity" = the same phenomena (learns, relearns
+      after swap, needs compete). No intentional behavioral diffs noted. The *measured* full-vs-hebb-vs-
+      frozen comparison is Phase 1, by the harness.
 
 ## Phase 1 — Headless harness + baselines (handoff step 1)
 

@@ -36,8 +36,10 @@ original design notes and rationale from the prototype author.
     softmax `Policy`, inverse-CDF `Select`) ✓ · `LearningRule` + `LearningMode`
     (three-factor update; owns eligibility + reward prediction) ✓ · `Simulation` step loop +
     `SimulationSnapshot` (wires it all in prototype order; bit-identical from a seed) ✓.
-    **Core is complete (140 tests, ~99% line). Next: Avalonia UI, then the parity check.** Order
-    follows the prototype's `step()`; see `TODO.md` for the live checklist.
+    **Phase 0 is complete: Core + Avalonia UI ported, parity accepted (qualitative, by eye —
+    the browser oracle is unseeded `Math.random`/`Float32`, so there is no numeric match).
+    143 tests, Core ~99% line. Next is Phase 1: the headless harness + the first measured baseline.**
+    Order follows the prototype's `step()`; see `TODO.md` for the live checklist.
   - **Component seam:** `Network` holds the fixed reservoir only; `MotorLayer` holds the learned
     readout `Wo`; `LearningRule` holds the eligibility trace + reward-prediction state and updates
     `Wo` through `MotorLayer`'s flat `Get/SetReadoutWeight`. The three-factor update is **local by
@@ -55,7 +57,17 @@ original design notes and rationale from the prototype author.
 - `src/WormForaging.App/` — Avalonia front end. Renders the sim and mirrors the prototype's
   controls. Contains **no simulation logic** — it only drives `Core` and draws. Rendering is a
   custom `Control` overriding `Render(DrawingContext)`, driven by a `DispatcherTimer`; odor/heat
-  glows use `RadialGradientBrush`. No SkiaSharp dependency.
+  glows use `RadialGradientBrush`. No SkiaSharp dependency. Panels: arena, energy/temp history,
+  interneuron activations + readout-weight heatmap, steps-per-meal.
+  - **Render-trigger gotcha (cost two blank panels):** a custom `Control` redraws only when one of
+    *its own* styled properties changes *value*. Two consequences, both learned the hard way. (1) A
+    property bound to a stable mutable collection (same `List` reference, mutated in place) never
+    looks changed, so `RaisePropertyChanged` fires but the control never re-renders — hand out a
+    **fresh reference** each tick (e.g. `History = buffer.ToArray()`), or bind it to the per-tick
+    fresh `SimulationSnapshot` so a sibling property forces the redraw. (2) The control's property
+    type must match the snapshot's **exactly**: binding `IReadOnlyList<long>` (snapshot
+    `MealIntervals`) to an `IEnumerable<double>` property silently yields null. The working panels
+    get their redraw from `CurrentSnapshot` being a new record every tick.
   - **Host & DI:** a Generic Host (`Microsoft.Extensions.Hosting`) is the single composition root
     (Microsoft DI). Built in `Hosting/AppHostBuilder.cs`, started in `App.axaml.cs`. This mirrors
     the **HyperSpace** app (`C:\Users\TreyTomes\projects\HyperSpace`), which is the compatibility
