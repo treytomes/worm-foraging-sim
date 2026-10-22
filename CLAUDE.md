@@ -28,6 +28,20 @@ original design notes and rationale from the prototype author.
   World, body/metabolism, senses, recurrent network, the learning rule, and the `Simulation`
   step loop. All tunables live in one `SimConfig`. State is exposed as plain snapshots so UI
   and harness can both read it.
+  - **Port status (slice by slice, each with parity tests, Core line cov ~99%):**
+    `SimConfig` ✓ · `World` (odor/temp fields, Lissajous lamp, food spawn) ✓ · `Body`
+    (movement, thermoregulation, metabolism) ✓ · `Directions` + `SensePermutation` + `Senses`
+    (8-channel differential sensors, swap) ✓ · **network → motor → learning → `Simulation`
+    (next)**. Order follows the prototype's `step()`; see `TODO.md` for the live checklist.
+  - **Precision:** Core computes in `double`; the prototype uses `Float32Array`. Parity is
+    *qualitative*, not bit-for-bit JS. "Deterministic" means same seed + config ⇒ identical
+    *C#* run (guarded by tests), not identical to the browser.
+  - **Model character worth remembering:** the odor and heat sensors are *differential*
+    (direction vs. the mean of all four), so a uniform field reads as zero and — notably —
+    sitting on the lamp's peak gives large thermal *discomfort* but near-zero heat *gradient*
+    signal. Discomfort (a drive, fed to the net directly) and gradient sensing (a direction)
+    are deliberately decoupled. A body's `Hunger`/`ThermalDeviation` drives are separate from
+    the sensor vector and enter the network as their own weighted inputs.
 - `src/WormForaging.App/` — Avalonia front end. Renders the sim and mirrors the prototype's
   controls. Contains **no simulation logic** — it only drives `Core` and draws. Rendering is a
   custom `Control` overriding `Render(DrawingContext)`, driven by a `DispatcherTimer`; odor/heat

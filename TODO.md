@@ -46,7 +46,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · *(measured)* vs *(guess
       Swap is a first-class `SensePermutation` (Identity / Swapped / Toggle); shared N/E/S/W `Directions`
       added. The "2 internal drives" (hunger, dev) are NOT in this vector — they enter the network
       directly, and are already exposed on `Body`. 23 tests (Senses + permutation), Core at 99.6%.
-- [ ] Port the network: 16 interneurons, sparse recurrent wiring, `tanh`, homeostatic gain.
+- [x] Port the network: `Network` = 16 interneurons, fixed random wiring (Win, sparse ~20% Wrec,
+      drive weights, bias), `u = wh·hunger + wt·dev·3 + b + Win·s + Wrec·xₚ`, `x = tanh(g·u)`, plus
+      homeostatic gain adaptation (`g += 0.002·(0.4−ax)`, clamped). Readout `Wo` deliberately NOT
+      here — it's the motor/learning layer's. Step contract: `Activate` → (motor/learning read it)
+      → `AdaptAndCommit`. First component with random init, so it anchors determinism. 17 tests
+      incl. exact forward-formula parity; Core at 99.7% line / 100% method.
 - [ ] Port motor layer + softmax action sampling — rewrite as a clean cumulative sample
       (the prototype's loop is correct but fragile; see handoff "known rough edges").
 - [ ] Port the learning rule: eligibility trace, modulator, three modes (full/hebb/frozen).

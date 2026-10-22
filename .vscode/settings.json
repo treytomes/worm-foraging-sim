@@ -2,6 +2,8 @@
     "cSpell.words": [
         "appsettings",
         "Avalonia",
+        "backprop",
+        "connectome",
         "hebb",
         "Hebbian",
         "Interneuron",
@@ -12,6 +14,8 @@
         "seedable",
         "Serilog",
         "slnx",
-        "softmax"
+        "softmax",
+        "tanh",
+        "Wrec"
     ]
 }
