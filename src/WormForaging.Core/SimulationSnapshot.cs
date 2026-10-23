@@ -23,6 +23,9 @@ namespace WormForaging.Core;
 /// <param name="MealIntervals">Steps taken to reach each meal, in order (the steps-per-meal series).</param>
 /// <param name="Activations">The interneuron activations this step (length = interneuron count).</param>
 /// <param name="ReadoutWeights">The motor readout weights (motor-major, length = motors·neurons).</param>
+/// <param name="Modulator">The broadcast neuromodulator delivered to the readout this step (reward in Full mode, fixed in Hebbian, zero in Frozen).</param>
+/// <param name="FoodDrive">The food (hunger) channel's contribution to the reward this step; computed regardless of mode.</param>
+/// <param name="ThermalDrive">The thermal channel's contribution to the reward this step; computed regardless of mode.</param>
 public sealed record SimulationSnapshot(
     long Step,
     double WormX,
@@ -37,4 +40,7 @@ public sealed record SimulationSnapshot(
     int MealsEaten,
     IReadOnlyList<long> MealIntervals,
     IReadOnlyList<double> Activations,
-    IReadOnlyList<double> ReadoutWeights);
+    IReadOnlyList<double> ReadoutWeights,
+    double Modulator,
+    double FoodDrive,
+    double ThermalDrive);

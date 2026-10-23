@@ -1,8 +1,17 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WormForaging.App.App"
-             RequestedThemeVariant="Default">
-             <!-- "Default" follows the system theme variant; "Dark"/"Light" force one. -->
+             RequestedThemeVariant="Dark">
+             <!-- "Default" follows the system theme variant; "Dark"/"Light" pin one. The shell's
+                  theme switch changes this at runtime and persists the choice. -->
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://WormForaging.App/Themes/Generic.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />

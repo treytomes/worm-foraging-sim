@@ -1,0 +1,174 @@
+<!--
+    The shared control themes and the theme dictionaries that pick a palette for the active variant.
+
+    - Light.axaml — the light palette.
+    - Dark.axaml  — the dark palette (VS Code "Dark 2026").
+
+    Every brush is looked up with DynamicResource, so switching the requested variant re-themes the
+    whole shell without recreating windows.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <!-- "Default" is Avalonia's fallback key: it applies to any variant without an entry. -->
+        <ResourceDictionary x:Key="Default">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://WormForaging.App/Themes/Light.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://WormForaging.App/Themes/Dark.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!--
+        The default button: a bold 12pt label on the gradient chrome, with a 1px border and a soft
+        drop shadow. Ported from the HyperSpace shell.
+    -->
+    <ControlTheme x:Key="ButtonDefault" TargetType="Button">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource ComponentText}" />
+        <Setter Property="Background" Value="{DynamicResource ButtonDefaultBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="4" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid>
+                    <Border Name="Chrome"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            BoxShadow="-0.5 1.4 4 0 #80000000">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True" />
+                    </Border>
+
+                    <!-- The focus ring: a blue outline just outside the chrome. -->
+                    <Border Name="FocusRing"
+                            Margin="-2"
+                            BorderBrush="{DynamicResource ButtonDefaultFocusRectangle}"
+                            BorderThickness="1"
+                            CornerRadius="{TemplateBinding CornerRadius}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^ /template/ Border#FocusRing">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="^:pointerover /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource ButtonDefaultHover}" />
+        </Style>
+
+        <Style Selector="^:pressed /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource ButtonDefaultPressed}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#FocusRing">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForeground}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#Chrome">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorder}" />
+        </Style>
+    </ControlTheme>
+
+    <!--
+        The segmented button trio: the left/center/right themes round only the outer corners, so a
+        row of them reads as one control.
+    -->
+    <ControlTheme x:Key="ButtonLeftDefault" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="CornerRadius" Value="4,0,0,4" />
+        <Setter Property="Margin" Value="4,4,0,4" />
+    </ControlTheme>
+
+    <ControlTheme x:Key="ButtonCenterDefault" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+    </ControlTheme>
+
+    <ControlTheme x:Key="ButtonRightDefault" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="CornerRadius" Value="0,4,4,0" />
+        <Setter Property="Margin" Value="0,4,4,4" />
+    </ControlTheme>
+
+    <!--
+        The theme switch's segmented radio group. A RadioButton is a ToggleButton is a Button, so it
+        bases on the button theme and looks like one; the checked option is filled with the accent
+        color instead of showing a radio dot.
+    -->
+    <ControlTheme x:Key="RadioButtonLeftDefault" TargetType="RadioButton" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="CornerRadius" Value="4,0,0,4" />
+        <Setter Property="Margin" Value="4,4,0,4" />
+
+        <Style Selector="^:checked">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="^:checked /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource RadioButtonCheckedBackground}" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource RadioButtonCheckedHoverBackground}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="RadioButtonCenterDefault" TargetType="RadioButton" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+
+        <Style Selector="^:checked">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="^:checked /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource RadioButtonCheckedBackground}" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource RadioButtonCheckedHoverBackground}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="RadioButtonRightDefault" TargetType="RadioButton" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="CornerRadius" Value="0,4,4,0" />
+        <Setter Property="Margin" Value="0,4,4,4" />
+
+        <Style Selector="^:checked">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="^:checked /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource RadioButtonCheckedBackground}" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover /template/ Border#Chrome">
+            <Setter Property="Background" Value="{DynamicResource RadioButtonCheckedHoverBackground}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

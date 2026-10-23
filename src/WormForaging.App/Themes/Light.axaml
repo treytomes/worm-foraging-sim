@@ -1,0 +1,61 @@
+<!--
+    The light palette. Every key here has a dark counterpart in Dark.axaml with the same name;
+    Generic.axaml's ThemeDictionaries pick the file for the active variant, and the app's chrome
+    looks the keys up with DynamicResource so a variant change re-themes it in place.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Shell surfaces. -->
+    <SolidColorBrush x:Key="ControlBrush" Color="#F0F0F0" />
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#F9F9F9" />
+    <SolidColorBrush x:Key="ComponentBase" Color="#EFEFEF" />
+    <SolidColorBrush x:Key="ComponentLightGrayBrush" Color="#E2E2E2" />
+    <SolidColorBrush x:Key="ComponentGrayBrush" Color="#969696" />
+    <SolidColorBrush x:Key="ComponentPrimaryBrush" Color="#242D5D" />
+
+    <!-- Shell text. -->
+    <SolidColorBrush x:Key="ComponentText" Color="#000000" />
+    <SolidColorBrush x:Key="ComponentMutedText" Color="#6F6F6F" />
+
+    <!-- The button chrome: a light-to-mid gray vertical gradient. -->
+    <LinearGradientBrush x:Key="ButtonDefaultBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#EDEDED" Offset="0" />
+        <GradientStop Color="#DCDCDC" Offset="0.1" />
+        <GradientStop Color="#C3C3C3" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ButtonDefaultPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#C3C3C3" Offset="0" />
+        <GradientStop Color="#DCDCDC" Offset="0.9" />
+        <GradientStop Color="#EDEDED" Offset="1" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="ButtonDefaultBorder" Color="#BBBBBB" />
+    <SolidColorBrush x:Key="ButtonDefaultHover" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="ButtonDefaultFocusRectangle" Color="#0094FF" />
+    <SolidColorBrush x:Key="ButtonDisabledBorder" Color="#BBBBBB" />
+    <SolidColorBrush x:Key="ButtonDisabledForeground" Color="#7D7D7D" />
+
+    <!-- The theme switch's selected option. -->
+    <SolidColorBrush x:Key="RadioButtonCheckedBackground" Color="#0078D7" />
+    <SolidColorBrush x:Key="RadioButtonCheckedHoverBackground" Color="#1E88E5" />
+
+    <!-- The arena and plots: the surfaces and glyphs they draw with. -->
+    <SolidColorBrush x:Key="ArenaBackgroundBrush" Color="#E2E2E2" />
+    <SolidColorBrush x:Key="ChartBackgroundBrush" Color="#F9F9F9" />
+    <SolidColorBrush x:Key="ChartTextBrush" Color="#333333" />
+    <SolidColorBrush x:Key="WormBrush" Color="#333333" />
+    <SolidColorBrush x:Key="TrailBrush" Color="#6F6F6F" />
+    <SolidColorBrush x:Key="LampBrush" Color="#C2410C" />
+    <SolidColorBrush x:Key="FoodBrush" Color="#2F7D5B" />
+    <SolidColorBrush x:Key="PositiveBrush" Color="#2F7D5B" />
+    <SolidColorBrush x:Key="NegativeBrush" Color="#C2410C" />
+    <SolidColorBrush x:Key="ColdBrush" Color="#2F6FB0" />
+    <SolidColorBrush x:Key="ComfortBandBrush" Color="#26F08A4B" />
+
+    <!-- The radial glow colors (a Color, not a brush: the glow builds a RadialGradientBrush). -->
+    <Color x:Key="LampGlowColor">#F08A4B</Color>
+    <Color x:Key="FoodGlowColor">#4FB88A</Color>
+
+</ResourceDictionary>

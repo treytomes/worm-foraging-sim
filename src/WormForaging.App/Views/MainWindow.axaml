@@ -10,75 +10,149 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="Two needs, no backprop"
         Width="780"
-        Height="860">
-    
-    <!-- 2x2 layout: (0,0) arena, (0,1) control panel, (1,0) plots, (1,1) reserved. -->
-    <Grid Margin="12"
-        RowDefinitions="*,*"
-        ColumnDefinitions="*,*"
-        RowSpacing="8"
-        ColumnSpacing="8">
+        Height="860"
+        Background="{DynamicResource ControlBrush}">
 
-        <controls:ArenaControl Grid.Row="0"
-                                Grid.Column="0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                SimulationSnapshot="{Binding CurrentSnapshot}"
-                                Trail="{Binding Trail}"
-                                ArenaSize="{Binding ArenaSize}"
-                                ComfortTemperature="{Binding ComfortTemperature}" />
+    <DockPanel>
+        <!-- The toolbar: a bordered strip docked below the title bar. It carries the theme switch
+             (right-aligned) and leaves the left side free for controls migrated out of the grid. -->
+        <Border DockPanel.Dock="Top"
+                CornerRadius="4"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource ComponentGrayBrush}"
+                Background="{DynamicResource ComponentLightGrayBrush}">
+            <!-- LastChildFill="False": otherwise the DockPanel stretches its last child and undocks
+                 the switch from the right edge. -->
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="6" Margin="4,0,0,0">
+                    <Button Content="{Binding RunButtonText}" Command="{Binding ToggleRunCommand}" Theme="{StaticResource ButtonDefault}" />
+                    <Button Content="Reset" Command="{Binding ResetCommand}" Theme="{StaticResource ButtonDefault}" />
+                    <Button Content="Swap senses" Command="{Binding SwapSensesCommand}" Theme="{StaticResource ButtonDefault}" />
 
-        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="8">
-            <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap" />
+                    <ComboBox SelectedIndex="{Binding ModeIndex}" Width="140" Margin="6,4,0,4" VerticalAlignment="Center">
+                        <ComboBoxItem Content="Three-factor" />
+                        <ComboBoxItem Content="Plain Hebbian" />
+                        <ComboBoxItem Content="Frozen" />
+                    </ComboBox>
 
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Content="{Binding RunButtonText}" Command="{Binding ToggleRunCommand}" />
-                <Button Content="Reset" Command="{Binding ResetCommand}" />
-                <Button Content="Swap senses" Command="{Binding SwapSensesCommand}" />
-            </StackPanel>
+                    <CheckBox Content="homeostasis" IsChecked="{Binding HomeostasisEnabled}" VerticalAlignment="Center" Margin="6,0,0,0" />
 
-            <ComboBox SelectedIndex="{Binding ModeIndex}" Width="150">
-                <ComboBoxItem Content="Three-factor" />
-                <ComboBoxItem Content="Plain Hebbian" />
-                <ComboBoxItem Content="Frozen" />
-            </ComboBox>
+                    <TextBlock Text="explore" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource ComponentText}" />
+                    <Slider Minimum="0.3" Maximum="3" Value="{Binding ExploreTemperature}" Width="90" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ExploreTemperature, StringFormat='{}{0:F1}'}" VerticalAlignment="Center" Foreground="{DynamicResource ComponentText}" />
 
-            <CheckBox Content="homeostasis" IsChecked="{Binding HomeostasisEnabled}" />
+                    <TextBlock Text="speed" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource ComponentText}" />
+                    <Slider Minimum="1" Maximum="60" Value="{Binding Speed}" Width="90" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Speed}" VerticalAlignment="Center" Foreground="{DynamicResource ComponentText}" />
+                </StackPanel>
 
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="explore" VerticalAlignment="Center" />
-                <Slider Minimum="0.3" Maximum="3" Value="{Binding ExploreTemperature}" Width="120" />
-                <TextBlock Text="{Binding ExploreTemperature, StringFormat='{}{0:F1}'}" VerticalAlignment="Center" />
-            </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <RadioButton GroupName="ThemeVariant"
+                                 Content="Light"
+                                 IsChecked="{Binding IsLightTheme, Mode=TwoWay}"
+                                 ToolTip.Tip="Light theme"
+                                 Theme="{StaticResource RadioButtonLeftDefault}" />
+                    <RadioButton GroupName="ThemeVariant"
+                                 Content="Dark"
+                                 IsChecked="{Binding IsDarkTheme, Mode=TwoWay}"
+                                 ToolTip.Tip="Dark theme"
+                                 Theme="{StaticResource RadioButtonCenterDefault}" />
+                    <RadioButton GroupName="ThemeVariant"
+                                 Content="System"
+                                 IsChecked="{Binding IsSystemTheme, Mode=TwoWay}"
+                                 ToolTip.Tip="Follow the system theme"
+                                 Theme="{StaticResource RadioButtonRightDefault}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="speed" VerticalAlignment="Center" />
-                <Slider Minimum="1" Maximum="60" Value="{Binding Speed}" Width="120" />
-                <TextBlock Text="{Binding Speed}" VerticalAlignment="Center" />
-            </StackPanel>
-        </StackPanel>
+        <!-- The status bar: a flat strip along the bottom, separated from the content by a hairline. -->
+        <Border DockPanel.Dock="Bottom"
+                Padding="8,3"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource ComponentGrayBrush}"
+                Background="{DynamicResource ControlBrush}">
+            <DockPanel>
+                <TextBlock Text="{Binding StatusText}"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource ComponentText}" />
+            </DockPanel>
+        </Border>
 
-        <Grid Grid.Row="1" Grid.Column="0"
-              RowDefinitions="*,*,*"
-              RowSpacing="8">
-            <controls:HistoryPlotControl Grid.Row="0"
-                                         HorizontalAlignment="Stretch"
-                                         VerticalAlignment="Stretch"
-                                         History="{Binding History}"
-                                         ComfortTemperature="{Binding ComfortTemperature}" />
+        <!-- 2x2 layout: (0,0) arena, (0,1) control panel, (1,0) plots, (1,1) reserved. -->
+        <Grid Margin="12"
+              RowDefinitions="*,*"
+              ColumnDefinitions="*,*"
+              RowSpacing="8"
+              ColumnSpacing="8">
 
-            <controls:NetworkPlotControl Grid.Row="1"
-                                         HorizontalAlignment="Stretch"
-                                         VerticalAlignment="Stretch"
-                                         Activations="{Binding CurrentSnapshot.Activations}"
-                                         ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}" />
+            <controls:ArenaControl Grid.Row="0"
+                                   Grid.Column="0"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
+                                   SimulationSnapshot="{Binding CurrentSnapshot}"
+                                   Trail="{Binding Trail}"
+                                   ArenaSize="{Binding ArenaSize}"
+                                   ComfortTemperature="{Binding ComfortTemperature}"
+                                   BackgroundBrush="{DynamicResource ArenaBackgroundBrush}"
+                                   FieldBrush="{DynamicResource ChartBackgroundBrush}"
+                                   WormBrush="{DynamicResource WormBrush}"
+                                   TrailBrush="{DynamicResource TrailBrush}"
+                                   LampBrush="{DynamicResource LampBrush}"
+                                   FoodBrush="{DynamicResource FoodBrush}"
+                                   HotRingBrush="{DynamicResource NegativeBrush}"
+                                   ColdRingBrush="{DynamicResource ColdBrush}"
+                                   LampGlowColor="{DynamicResource LampGlowColor}"
+                                   FoodGlowColor="{DynamicResource FoodGlowColor}" />
 
-            <controls:MealPlotControl Grid.Row="2"
-                                      HorizontalAlignment="Stretch"
-                                      VerticalAlignment="Stretch"
-                                      MealIntervals="{Binding CurrentSnapshot.MealIntervals}" />
+            <Grid Grid.Row="1" Grid.Column="0"
+                  RowDefinitions="*,*,*"
+                  RowSpacing="8">
+                <controls:HistoryPlotControl Grid.Row="0"
+                                             HorizontalAlignment="Stretch"
+                                             VerticalAlignment="Stretch"
+                                             History="{Binding History}"
+                                             ComfortTemperature="{Binding ComfortTemperature}"
+                                             BackgroundBrush="{DynamicResource ChartBackgroundBrush}"
+                                             TextBrush="{DynamicResource ChartTextBrush}"
+                                             EnergyBrush="{DynamicResource PositiveBrush}"
+                                             BodyTempBrush="{DynamicResource NegativeBrush}"
+                                             ComfortBandBrush="{DynamicResource ComfortBandBrush}" />
+
+                <controls:NetworkPlotControl Grid.Row="1"
+                                             HorizontalAlignment="Stretch"
+                                             VerticalAlignment="Stretch"
+                                             Activations="{Binding CurrentSnapshot.Activations}"
+                                             ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}"
+                                             BackgroundBrush="{DynamicResource ChartBackgroundBrush}"
+                                             TextBrush="{DynamicResource ChartTextBrush}"
+                                             PositiveBrush="{DynamicResource PositiveBrush}"
+                                             NegativeBrush="{DynamicResource NegativeBrush}"
+                                             AxisBrush="{DynamicResource ChartTextBrush}" />
+
+                <controls:MealPlotControl Grid.Row="2"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch"
+                                          MealIntervals="{Binding CurrentSnapshot.MealIntervals}"
+                                          BackgroundBrush="{DynamicResource ChartBackgroundBrush}"
+                                          TextBrush="{DynamicResource ChartTextBrush}"
+                                          LineBrush="{DynamicResource PositiveBrush}" />
+            </Grid>
+
+            <controls:WiringDiagramControl Grid.Row="1" Grid.Column="1"
+                                           HorizontalAlignment="Stretch"
+                                           VerticalAlignment="Stretch"
+                                           Topology="{Binding Topology}"
+                                           Activations="{Binding CurrentSnapshot.Activations}"
+                                           ReadoutWeights="{Binding CurrentSnapshot.ReadoutWeights}"
+                                           Modulator="{Binding CurrentSnapshot.Modulator}"
+                                           FoodDrive="{Binding CurrentSnapshot.FoodDrive}"
+                                           ThermalDrive="{Binding CurrentSnapshot.ThermalDrive}"
+                                           BackgroundBrush="{DynamicResource ChartBackgroundBrush}"
+                                           TextBrush="{DynamicResource ChartTextBrush}"
+                                           PositiveBrush="{DynamicResource PositiveBrush}"
+                                           NegativeBrush="{DynamicResource NegativeBrush}" />
         </Grid>
-
-        <!-- (1,1) reserved for an upcoming panel. -->
-    </Grid>
+    </DockPanel>
 </Window>

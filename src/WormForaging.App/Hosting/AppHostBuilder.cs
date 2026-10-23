@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using System.Security.Cryptography;
+using WormForaging.App.Shell;
 using WormForaging.App.ViewModels;
 using WormForaging.Core.Rng;
 
@@ -61,6 +62,8 @@ public static class AppHostBuilder
         builder.Services.AddSingleton<IRandom>(_ => new Pcg32Random(simulation.Seed));
         builder.Services.AddSingleton<Core.SimConfig>();
 
+        builder.Services.AddSingleton<ISettingsStore>(
+            _ => new JsonFileSettingsStore(JsonFileSettingsStore.DefaultDirectory()));
         builder.Services.AddSingleton<MainWindowViewModel>();
 
         return builder.Build();

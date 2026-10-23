@@ -39,6 +39,7 @@ public sealed class Simulation
 
     private double _exploreTemperature;
     private long _step;
+    private NetworkTopology? _topology;
 
     /// <summary>
     /// Builds a fresh simulation: the worm starts at the arena centre, food is placed clear of it,
@@ -97,6 +98,21 @@ public sealed class Simulation
 
     /// <summary>The number of steps taken so far.</summary>
     public long StepCount => _step;
+
+    /// <summary>
+    /// The network's fixed wiring, for a UI to draw a diagram from. Built once on first access and
+    /// cached, because the reservoir never changes; the learned readout and the live activations are
+    /// read from <see cref="Snapshot"/> instead.
+    /// </summary>
+    public NetworkTopology Topology => _topology ??= new NetworkTopology(
+        NeuronCount: _network.NeuronCount,
+        SensorCount: _network.SensorCount,
+        MotorCount: _config.MotorCount,
+        InputWeights: _network.InputWeights.ToArray(),
+        RecurrentWeights: _network.RecurrentWeights.ToArray(),
+        HungerWeights: _network.HungerWeights.ToArray(),
+        ThermalWeights: _network.ThermalWeights.ToArray(),
+        Biases: _network.Biases.ToArray());
 
     /// <summary>Toggles the sense swap between the identity and swapped mappings.</summary>
     public void SwapSenses() => Permutation = Permutation.Toggle();
@@ -162,5 +178,8 @@ public sealed class Simulation
             MealsEaten: _body.MealsEaten,
             MealIntervals: _body.MealIntervals.ToArray(),
             Activations: _network.Activations.ToArray(),
-            ReadoutWeights: _motor.ReadoutWeights.ToArray());
+            ReadoutWeights: _motor.ReadoutWeights.ToArray(),
+            Modulator: _learning.LastModulator,
+            FoodDrive: _learning.LastFoodDrive,
+            ThermalDrive: _learning.LastThermalDrive);
 }

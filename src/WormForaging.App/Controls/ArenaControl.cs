@@ -29,11 +29,29 @@ public sealed class ArenaControl : Control
     /// <summary>Thermal deviation below which the discomfort ring is not drawn.</summary>
     private const double RingDeadband = 0.08;
 
-    /// <summary>Background color of the control (distinguishes the arena from its host).</summary>
-    private static readonly Color BackgroundColor = Color.Parse("#121210");
+    /// <summary>Default background brush of the control (overridden by the theme).</summary>
+    private static readonly IBrush DefaultBackgroundBrush = new SolidColorBrush(Color.Parse("#121210"));
 
-    /// <summary>Color of the (square) arena field within the control.</summary>
-    private static readonly Color ArenaColor = Color.Parse("#1f1f1c");
+    /// <summary>Default brush of the (square) arena field within the control (overridden by the theme).</summary>
+    private static readonly IBrush DefaultFieldBrush = new SolidColorBrush(Color.Parse("#1f1f1c"));
+
+    /// <summary>Default worm brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultWormBrush = new SolidColorBrush(Color.Parse("#ecece6"));
+
+    /// <summary>Default trail brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultTrailBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
+
+    /// <summary>Default lamp brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultLampBrush = new SolidColorBrush(Color.Parse("#c2410c"));
+
+    /// <summary>Default food brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultFoodBrush = new SolidColorBrush(Color.Parse("#2f7d5b"));
+
+    /// <summary>Default too-hot ring brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultHotRingBrush = new SolidColorBrush(Color.Parse("#f08a4b"));
+
+    /// <summary>Default too-cold ring brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultColdRingBrush = new SolidColorBrush(Color.Parse("#4f8fd8"));
 
     /// <summary>Lamp half-size, in cells.</summary>
     private const double LampHalfSizeCells = 6.0 / 9.0;
@@ -91,6 +109,66 @@ public sealed class ArenaControl : Control
     /// </summary>
     public static readonly StyledProperty<double> ComfortTemperatureProperty =
         AvaloniaProperty.Register<ArenaControl, double>(nameof(ComfortTemperature), double.NaN);
+
+    /// <summary>
+    /// Defines the <see cref="BackgroundBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> BackgroundBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(BackgroundBrush), DefaultBackgroundBrush);
+
+    /// <summary>
+    /// Defines the <see cref="FieldBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> FieldBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(FieldBrush), DefaultFieldBrush);
+
+    /// <summary>
+    /// Defines the <see cref="WormBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> WormBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(WormBrush), DefaultWormBrush);
+
+    /// <summary>
+    /// Defines the <see cref="TrailBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> TrailBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(TrailBrush), DefaultTrailBrush);
+
+    /// <summary>
+    /// Defines the <see cref="LampBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> LampBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(LampBrush), DefaultLampBrush);
+
+    /// <summary>
+    /// Defines the <see cref="FoodBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> FoodBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(FoodBrush), DefaultFoodBrush);
+
+    /// <summary>
+    /// Defines the <see cref="HotRingBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> HotRingBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(HotRingBrush), DefaultHotRingBrush);
+
+    /// <summary>
+    /// Defines the <see cref="ColdRingBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> ColdRingBrushProperty =
+        AvaloniaProperty.Register<ArenaControl, IBrush?>(nameof(ColdRingBrush), DefaultColdRingBrush);
+
+    /// <summary>
+    /// Defines the <see cref="LampGlowColor"/> property.
+    /// </summary>
+    public static readonly StyledProperty<Color> LampGlowColorProperty =
+        AvaloniaProperty.Register<ArenaControl, Color>(nameof(LampGlowColor), Color.Parse("#f08a4b"));
+
+    /// <summary>
+    /// Defines the <see cref="FoodGlowColor"/> property.
+    /// </summary>
+    public static readonly StyledProperty<Color> FoodGlowColorProperty =
+        AvaloniaProperty.Register<ArenaControl, Color>(nameof(FoodGlowColor), Color.Parse("#4fb88a"));
 
     #endregion
 
@@ -155,6 +233,96 @@ public sealed class ArenaControl : Control
         set => SetValue(ComfortTemperatureProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the brush behind the arena square (the control's own background).
+    /// </summary>
+    public IBrush? BackgroundBrush
+    {
+        get => GetValue(BackgroundBrushProperty);
+        set => SetValue(BackgroundBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the square arena field.
+    /// </summary>
+    public IBrush? FieldBrush
+    {
+        get => GetValue(FieldBrushProperty);
+        set => SetValue(FieldBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the worm dot.
+    /// </summary>
+    public IBrush? WormBrush
+    {
+        get => GetValue(WormBrushProperty);
+        set => SetValue(WormBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the worm trail.
+    /// </summary>
+    public IBrush? TrailBrush
+    {
+        get => GetValue(TrailBrushProperty);
+        set => SetValue(TrailBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the heat lamp.
+    /// </summary>
+    public IBrush? LampBrush
+    {
+        get => GetValue(LampBrushProperty);
+        set => SetValue(LampBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the food dot.
+    /// </summary>
+    public IBrush? FoodBrush
+    {
+        get => GetValue(FoodBrushProperty);
+        set => SetValue(FoodBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the ring shown when the body is too hot.
+    /// </summary>
+    public IBrush? HotRingBrush
+    {
+        get => GetValue(HotRingBrushProperty);
+        set => SetValue(HotRingBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the ring shown when the body is too cold.
+    /// </summary>
+    public IBrush? ColdRingBrush
+    {
+        get => GetValue(ColdRingBrushProperty);
+        set => SetValue(ColdRingBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the color of the lamp's radial glow (the glow fade is derived from it).
+    /// </summary>
+    public Color LampGlowColor
+    {
+        get => GetValue(LampGlowColorProperty);
+        set => SetValue(LampGlowColorProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the color of the food's radial glow (the glow fade is derived from it).
+    /// </summary>
+    public Color FoodGlowColor
+    {
+        get => GetValue(FoodGlowColorProperty);
+        set => SetValue(FoodGlowColorProperty, value);
+    }
+
     #endregion
 
     #region Methods
@@ -185,7 +353,17 @@ public sealed class ArenaControl : Control
             || change.Property == TrailProperty
             || change.Property == ArenaSizeProperty
             || change.Property == PaddingProperty
-            || change.Property == ComfortTemperatureProperty)
+            || change.Property == ComfortTemperatureProperty
+            || change.Property == BackgroundBrushProperty
+            || change.Property == FieldBrushProperty
+            || change.Property == WormBrushProperty
+            || change.Property == TrailBrushProperty
+            || change.Property == LampBrushProperty
+            || change.Property == FoodBrushProperty
+            || change.Property == HotRingBrushProperty
+            || change.Property == ColdRingBrushProperty
+            || change.Property == LampGlowColorProperty
+            || change.Property == FoodGlowColorProperty)
         {
             InvalidateVisual();
         }
@@ -204,7 +382,10 @@ public sealed class ArenaControl : Control
         }
 
         // Control background, distinct from the arena field.
-        context.FillRectangle(new SolidColorBrush(BackgroundColor), new Rect(0, 0, width, height));
+        if (BackgroundBrush is { } background)
+        {
+            context.FillRectangle(background, new Rect(0, 0, width, height));
+        }
 
         // Fit a centered square arena inside the padded control box (letterbox the excess).
         double available = Math.Min(width, height) - Padding * 2;
@@ -220,7 +401,10 @@ public sealed class ArenaControl : Control
 
         // Arena field.
         var arenaRect = new Rect(originX, originY, arenaPx, arenaPx);
-        context.FillRectangle(new SolidColorBrush(ArenaColor), arenaRect);
+        if (FieldBrush is { } field)
+        {
+            context.FillRectangle(field, arenaRect);
+        }
 
         var snapshot = SimulationSnapshot;
         if (snapshot == null)
@@ -232,32 +416,38 @@ public sealed class ArenaControl : Control
         Point At(double x, double y) => new(originX + x * scale, originY + y * scale);
 
         // Lamp glow.
-        DrawRadialGlow(context, At(snapshot.LampX, snapshot.LampY), Px(LampGlowRadiusCells), Color.Parse("#f08a4b"), width, height);
+        DrawRadialGlow(context, At(snapshot.LampX, snapshot.LampY), Px(LampGlowRadiusCells), LampGlowColor, width, height);
 
         // Food glow.
-        DrawRadialGlow(context, At(snapshot.FoodX, snapshot.FoodY), Px(FoodGlowRadiusCells), Color.Parse("#4fb88a"), width, height);
+        DrawRadialGlow(context, At(snapshot.FoodX, snapshot.FoodY), Px(FoodGlowRadiusCells), FoodGlowColor, width, height);
 
         // Lamp.
         double lampHalf = Px(LampHalfSizeCells);
         Point lampCenter = At(snapshot.LampX, snapshot.LampY);
-        context.FillRectangle(
-            new SolidColorBrush(Color.Parse("#c2410c")),
-            new Rect(lampCenter.X - lampHalf, lampCenter.Y - lampHalf, lampHalf * 2, lampHalf * 2));
+        if (LampBrush is { } lamp)
+        {
+            context.FillRectangle(
+                lamp,
+                new Rect(lampCenter.X - lampHalf, lampCenter.Y - lampHalf, lampHalf * 2, lampHalf * 2));
+        }
 
         // Food.
         double foodRadius = Px(FoodRadiusCells);
-        context.DrawEllipse(
-            new SolidColorBrush(Color.Parse("#2f7d5b")),
-            null,
-            At(snapshot.FoodX, snapshot.FoodY),
-            foodRadius,
-            foodRadius);
+        if (FoodBrush is { } food)
+        {
+            context.DrawEllipse(
+                food,
+                null,
+                At(snapshot.FoodX, snapshot.FoodY),
+                foodRadius,
+                foodRadius);
+        }
 
         // Trail.
         var trail = Trail;
-        if (trail != null && trail.Count > 1)
+        if (trail != null && trail.Count > 1 && TrailBrush is { } trailBrush)
         {
-            var trailPen = new Pen(new SolidColorBrush(Color.Parse("#9a9a92")), Math.Max(1, Px(TrailStrokeCells)));
+            var trailPen = new Pen(trailBrush, Math.Max(1, Px(TrailStrokeCells)));
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
             {
@@ -274,26 +464,27 @@ public sealed class ArenaControl : Control
         // Worm.
         double wormRadius = Px(WormRadiusCells);
         Point wormCenter = At(snapshot.WormX, snapshot.WormY);
-        context.DrawEllipse(
-            new SolidColorBrush(Color.Parse("#ecece6")),
-            null,
-            wormCenter,
-            wormRadius,
-            wormRadius);
+        if (WormBrush is { } worm)
+        {
+            context.DrawEllipse(worm, null, wormCenter, wormRadius, wormRadius);
+        }
 
         // Temperature ring.
         var comfortTemp = ComfortTemperature;
         var dev = snapshot.BodyTemperature - comfortTemp;
         if (!double.IsNaN(comfortTemp) && Math.Abs(dev) > RingDeadband)
         {
-            var ringColor = dev > 0 ? Color.Parse("#f08a4b") : Color.Parse("#4f8fd8");
-            double ringRadius = Px(RingRadiusCells);
-            context.DrawEllipse(
-                null,
-                new Pen(new SolidColorBrush(ringColor), Math.Max(1, Px(RingStrokeCells))),
-                wormCenter,
-                ringRadius,
-                ringRadius);
+            var ringBrush = dev > 0 ? HotRingBrush : ColdRingBrush;
+            if (ringBrush is { } ring)
+            {
+                double ringRadius = Px(RingRadiusCells);
+                context.DrawEllipse(
+                    null,
+                    new Pen(ring, Math.Max(1, Px(RingStrokeCells))),
+                    wormCenter,
+                    ringRadius,
+                    ringRadius);
+            }
         }
     }
 

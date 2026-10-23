@@ -1,0 +1,63 @@
+<!--
+    The dark palette — VS Code's "Dark 2026" surfaces and accents, matching the HyperSpace shell.
+
+    Every key here has a light counterpart in Light.axaml with the same name; Generic.axaml's
+    ThemeDictionaries pick the file for the active variant, and the app's chrome looks the keys up
+    with DynamicResource so a variant change re-themes it in place.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Shell surfaces. -->
+    <SolidColorBrush x:Key="ControlBrush" Color="#191A1B" />
+    <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#121314" />
+    <SolidColorBrush x:Key="ComponentBase" Color="#202122" />
+    <SolidColorBrush x:Key="ComponentLightGrayBrush" Color="#242526" />
+    <SolidColorBrush x:Key="ComponentGrayBrush" Color="#2A2B2C" />
+    <SolidColorBrush x:Key="ComponentPrimaryBrush" Color="#3994BC" />
+
+    <!-- Shell text. -->
+    <SolidColorBrush x:Key="ComponentText" Color="#BFBFBF" />
+    <SolidColorBrush x:Key="ComponentMutedText" Color="#8C8C8C" />
+
+    <!-- The button chrome: the same gradient shape as the light theme, over the dark surfaces. -->
+    <LinearGradientBrush x:Key="ButtonDefaultBackground" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#3A3B3C" Offset="0" />
+        <GradientStop Color="#313233" Offset="0.1" />
+        <GradientStop Color="#242526" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="ButtonDefaultPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Color="#242526" Offset="0" />
+        <GradientStop Color="#2C2D2E" Offset="0.9" />
+        <GradientStop Color="#3A3B3C" Offset="1" />
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="ButtonDefaultBorder" Color="#333536" />
+    <SolidColorBrush x:Key="ButtonDefaultHover" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="ButtonDefaultFocusRectangle" Color="#3994BC" />
+    <SolidColorBrush x:Key="ButtonDisabledBorder" Color="#2A2B2C" />
+    <SolidColorBrush x:Key="ButtonDisabledForeground" Color="#555555" />
+
+    <!-- The theme switch's selected option: VS Code's button accent. -->
+    <SolidColorBrush x:Key="RadioButtonCheckedBackground" Color="#297AA0" />
+    <SolidColorBrush x:Key="RadioButtonCheckedHoverBackground" Color="#2B7DA3" />
+
+    <!-- The arena and plots: the surfaces and glyphs they draw with. -->
+    <SolidColorBrush x:Key="ArenaBackgroundBrush" Color="#121210" />
+    <SolidColorBrush x:Key="ChartBackgroundBrush" Color="#1F1F1C" />
+    <SolidColorBrush x:Key="ChartTextBrush" Color="#9A9A92" />
+    <SolidColorBrush x:Key="WormBrush" Color="#ECECE6" />
+    <SolidColorBrush x:Key="TrailBrush" Color="#9A9A92" />
+    <SolidColorBrush x:Key="LampBrush" Color="#C2410C" />
+    <SolidColorBrush x:Key="FoodBrush" Color="#2F7D5B" />
+    <SolidColorBrush x:Key="PositiveBrush" Color="#4FB88A" />
+    <SolidColorBrush x:Key="NegativeBrush" Color="#F08A4B" />
+    <SolidColorBrush x:Key="ColdBrush" Color="#4F8FD8" />
+    <SolidColorBrush x:Key="ComfortBandBrush" Color="#26F08A4B" />
+
+    <!-- The radial glow colors (a Color, not a brush: the glow builds a RadialGradientBrush). -->
+    <Color x:Key="LampGlowColor">#F08A4B</Color>
+    <Color x:Key="FoodGlowColor">#4FB88A</Color>
+
+</ResourceDictionary>

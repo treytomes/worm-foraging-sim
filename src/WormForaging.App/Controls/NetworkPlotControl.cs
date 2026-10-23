@@ -37,6 +37,21 @@ public sealed class NetworkPlotControl : Control
     /// <summary>Number of motor readout rows and their N/E/S/W labels.</summary>
     private static readonly string[] MotorLabels = { "N", "E", "S", "W" };
 
+    /// <summary>Default plot background brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultBackgroundBrush = new SolidColorBrush(Color.Parse("#1f1f1c"));
+
+    /// <summary>Default text brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultTextBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
+
+    /// <summary>Default positive-value brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultPositiveBrush = new SolidColorBrush(Color.Parse("#4fb88a"));
+
+    /// <summary>Default negative-value brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultNegativeBrush = new SolidColorBrush(Color.Parse("#f08a4b"));
+
+    /// <summary>Default axis brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultAxisBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
+
     /// <summary>
     /// Defines the <see cref="Activations"/> property.
     /// </summary>
@@ -48,6 +63,36 @@ public sealed class NetworkPlotControl : Control
     /// </summary>
     public static readonly StyledProperty<double[]?> ReadoutWeightsProperty =
         AvaloniaProperty.Register<NetworkPlotControl, double[]?>(nameof(ReadoutWeights));
+
+    /// <summary>
+    /// Defines the <see cref="BackgroundBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> BackgroundBrushProperty =
+        AvaloniaProperty.Register<NetworkPlotControl, IBrush?>(nameof(BackgroundBrush), DefaultBackgroundBrush);
+
+    /// <summary>
+    /// Defines the <see cref="TextBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> TextBrushProperty =
+        AvaloniaProperty.Register<NetworkPlotControl, IBrush?>(nameof(TextBrush), DefaultTextBrush);
+
+    /// <summary>
+    /// Defines the <see cref="PositiveBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> PositiveBrushProperty =
+        AvaloniaProperty.Register<NetworkPlotControl, IBrush?>(nameof(PositiveBrush), DefaultPositiveBrush);
+
+    /// <summary>
+    /// Defines the <see cref="NegativeBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> NegativeBrushProperty =
+        AvaloniaProperty.Register<NetworkPlotControl, IBrush?>(nameof(NegativeBrush), DefaultNegativeBrush);
+
+    /// <summary>
+    /// Defines the <see cref="AxisBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> AxisBrushProperty =
+        AvaloniaProperty.Register<NetworkPlotControl, IBrush?>(nameof(AxisBrush), DefaultAxisBrush);
 
     #endregion
 
@@ -83,6 +128,51 @@ public sealed class NetworkPlotControl : Control
         set => SetValue(ReadoutWeightsProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the brush filling the plot background.
+    /// </summary>
+    public IBrush? BackgroundBrush
+    {
+        get => GetValue(BackgroundBrushProperty);
+        set => SetValue(BackgroundBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the title caption and axis labels.
+    /// </summary>
+    public IBrush? TextBrush
+    {
+        get => GetValue(TextBrushProperty);
+        set => SetValue(TextBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of positive activations and weights.
+    /// </summary>
+    public IBrush? PositiveBrush
+    {
+        get => GetValue(PositiveBrushProperty);
+        set => SetValue(PositiveBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of negative activations and weights.
+    /// </summary>
+    public IBrush? NegativeBrush
+    {
+        get => GetValue(NegativeBrushProperty);
+        set => SetValue(NegativeBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the activation baseline.
+    /// </summary>
+    public IBrush? AxisBrush
+    {
+        get => GetValue(AxisBrushProperty);
+        set => SetValue(AxisBrushProperty, value);
+    }
+
     #endregion
 
     #region Methods
@@ -91,7 +181,13 @@ public sealed class NetworkPlotControl : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ActivationsProperty || change.Property == ReadoutWeightsProperty)
+        if (change.Property == ActivationsProperty
+            || change.Property == ReadoutWeightsProperty
+            || change.Property == BackgroundBrushProperty
+            || change.Property == TextBrushProperty
+            || change.Property == PositiveBrushProperty
+            || change.Property == NegativeBrushProperty
+            || change.Property == AxisBrushProperty)
         {
             InvalidateVisual();
         }
@@ -109,12 +205,18 @@ public sealed class NetworkPlotControl : Control
             return;
         }
 
-        context.FillRectangle(new SolidColorBrush(Color.Parse("#1f1f1c")), new Rect(0, 0, width, height));
+        if (BackgroundBrush is { } background)
+        {
+            context.FillRectangle(background, new Rect(0, 0, width, height));
+        }
 
-        var textBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
-        context.DrawText(
-            new FormattedText("interneurons (bars) · readout weights (grid)", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, LabelFontSize, textBrush),
-            new Point(Padding, 2));
+        var textBrush = TextBrush;
+        if (textBrush is not null)
+        {
+            context.DrawText(
+                new FormattedText("interneurons (bars) · readout weights (grid)", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, LabelFontSize, textBrush),
+                new Point(Padding, 2));
+        }
 
         double plotTop = TitleBandHeight + Padding;
         double plotBottom = height - Padding;
@@ -149,28 +251,32 @@ public sealed class NetworkPlotControl : Control
         double baseline = (plotTop + plotBottom) / 2;
         double halfHeight = plotHeight / 2;
 
-        var positiveBrush = new SolidColorBrush(Color.Parse("#4fb88a"));
-        var negativeBrush = new SolidColorBrush(Color.Parse("#f08a4b"));
+        var positiveBrush = PositiveBrush;
+        var negativeBrush = NegativeBrush;
         for (int i = 0; i < count; i++)
         {
             double v = activations[i];
             double magnitude = Math.Min(1.0, Math.Abs(v)) * halfHeight;
             double x = left + i * slotWidth + (slotWidth - barWidth) / 2;
-            if (v >= 0)
+            var brush = v >= 0 ? positiveBrush : negativeBrush;
+            if (brush is null)
             {
-                context.FillRectangle(positiveBrush, new Rect(x, baseline - magnitude, barWidth, magnitude));
+                continue;
             }
-            else
-            {
-                context.FillRectangle(negativeBrush, new Rect(x, baseline, barWidth, magnitude));
-            }
+
+            var rect = v >= 0
+                ? new Rect(x, baseline - magnitude, barWidth, magnitude)
+                : new Rect(x, baseline, barWidth, magnitude);
+            context.FillRectangle(brush, rect);
         }
 
-        var lineBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
-        context.FillRectangle(lineBrush, new Rect(left, baseline, panelWidth, 1));
+        if (AxisBrush is { } lineBrush)
+        {
+            context.FillRectangle(lineBrush, new Rect(left, baseline, panelWidth, 1));
+        }
     }
 
-    private void DrawWeights(DrawingContext context, double left, double panelWidth, double plotTop, double plotHeight, IBrush textBrush)
+    private void DrawWeights(DrawingContext context, double left, double panelWidth, double plotTop, double plotHeight, IBrush? textBrush)
     {
         var weights = ReadoutWeights;
         if (weights == null || panelWidth <= 0)
@@ -191,6 +297,11 @@ public sealed class NetworkPlotControl : Control
         double cellWidth = gridWidth / columns;
         double cellHeight = plotHeight / rows;
 
+        // The heatmap is a single-hue ramp: each cell keeps the positive/negative brush's color and
+        // scales its alpha by the weight's magnitude.
+        Color positiveColor = ToColor(PositiveBrush, Color.Parse("#4fb88a"));
+        Color negativeColor = ToColor(NegativeBrush, Color.Parse("#f08a4b"));
+
         for (int k = 0; k < rows; k++)
         {
             for (int j = 0; j < columns; j++)
@@ -203,12 +314,15 @@ public sealed class NetworkPlotControl : Control
 
                 double w = weights[idx] / 2.0;
                 double al = Math.Min(1.0, Math.Abs(w));
-                Color color = w > 0
-                    ? Color.FromArgb((byte)(al * 255), 79, 184, 138)
-                    : Color.FromArgb((byte)(al * 255), 240, 138, 75);
+                Color color = w > 0 ? positiveColor : negativeColor;
                 context.FillRectangle(
-                    new SolidColorBrush(color),
+                    new SolidColorBrush(Color.FromArgb((byte)(al * 255), color.R, color.G, color.B)),
                     new Rect(gridLeft + j * cellWidth, plotTop + k * cellHeight, Math.Max(1, cellWidth - 1), Math.Max(1, cellHeight - 1)));
+            }
+
+            if (textBrush is null)
+            {
+                continue;
             }
 
             double labelY = plotTop + k * cellHeight + (cellHeight - LabelFontSize) / 2;
@@ -217,6 +331,12 @@ public sealed class NetworkPlotControl : Control
                 new Point(left, labelY));
         }
     }
+
+    /// <summary>
+    /// The opaque color behind a brush (falls back when the brush is null or not a solid color).
+    /// </summary>
+    private static Color ToColor(IBrush? brush, Color fallback) =>
+        brush is ISolidColorBrush solid ? solid.Color : fallback;
 
     #endregion
 }

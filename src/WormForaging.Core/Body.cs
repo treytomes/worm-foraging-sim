@@ -2,7 +2,7 @@ namespace WormForaging.Core;
 
 /// <summary>
 /// The worm's body: where it is, how much energy it has, what's in its gut, and how warm it is.
-/// Owns the state transitions for moving, thermoregulating, eating, and metabolising.
+/// Owns the state transitions for moving, thermoregulating, eating, and metabolizing.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,8 +21,14 @@ namespace WormForaging.Core;
 /// </remarks>
 public sealed class Body
 {
+    #region Fields
+
     private readonly SimConfig _config;
     private readonly List<long> _mealIntervals = new();
+
+    #endregion
+
+    #region Constructors
 
     /// <summary>
     /// Creates a body at a start position with full-comfort temperature and the configured
@@ -42,6 +48,10 @@ public sealed class Body
         Temperature = config.ComfortTemperature;
         StepsSinceMeal = 0;
     }
+
+    #endregion
+
+    #region Properties
 
     /// <summary>The worm's x position, in arena cells.</summary>
     public double X { get; private set; }
@@ -79,6 +89,10 @@ public sealed class Body
     /// <summary>Thermal discomfort: the magnitude of <see cref="ThermalDeviation"/>. Prototype <c>d1</c>/<c>d0</c>.</summary>
     public double Discomfort => Math.Abs(ThermalDeviation);
 
+    #endregion
+
+    #region Methods
+
     /// <summary>
     /// Moves one cell in the chosen direction (clamped to stay inside the arena interior) and
     /// relaxes body temperature toward the local temperature at the new cell.
@@ -91,7 +105,7 @@ public sealed class Body
     {
         ArgumentNullException.ThrowIfNull(world);
 
-        double max = _config.ArenaSize - 1;
+        var max = _config.ArenaSize - 1;
         X = Math.Min(max, Math.Max(1.0, X + deltaX));
         Y = Math.Min(max, Math.Max(1.0, Y + deltaY));
 
@@ -124,10 +138,10 @@ public sealed class Body
             world.RespawnFood(X, Y);
         }
 
-        double absorbed = Math.Min(Gut, _config.AbsorptionRate);
+        var absorbed = Math.Min(Gut, _config.AbsorptionRate);
         Gut -= absorbed;
 
-        double energy = Energy
+        var energy = Energy
             + absorbed
             - _config.BaseMetabolicCost
             - _config.ThermalDiscomfortCost * Discomfort;
@@ -135,4 +149,6 @@ public sealed class Body
 
         return absorbed;
     }
+
+    #endregion
 }

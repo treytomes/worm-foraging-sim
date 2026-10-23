@@ -31,6 +31,8 @@ namespace WormForaging.Core;
 /// </remarks>
 public sealed class Network
 {
+    #region Fields
+
     private readonly SimConfig _config;
     private readonly int _neuronCount;
     private readonly int _sensorCount;
@@ -44,6 +46,10 @@ public sealed class Network
     private readonly double[] _activityTrace;       // ax
     private readonly double[] _previousActivations; // xp (recurrent state)
     private double[] _lastActivations;              // act (most recent Activate result)
+
+    #endregion
+    
+    #region Constructors
 
     /// <summary>
     /// Builds a network with randomly initialized, fixed wiring and the configured initial gains,
@@ -67,13 +73,13 @@ public sealed class Network
         _sensorCount = config.SensorCount;
 
         _inputWeights = new double[_neuronCount * _sensorCount];
-        for (int k = 0; k < _inputWeights.Length; k++)
+        for (var k = 0; k < _inputWeights.Length; k++)
         {
             _inputWeights[k] = random.NextGaussian() * config.InputWeightScale;
         }
 
         _recurrentWeights = new double[_neuronCount * _neuronCount];
-        for (int k = 0; k < _recurrentWeights.Length; k++)
+        for (var k = 0; k < _recurrentWeights.Length; k++)
         {
             _recurrentWeights[k] = random.NextDouble() < config.RecurrentConnectionProbability
                 ? random.NextGaussian() * config.RecurrentWeightScale
@@ -81,19 +87,19 @@ public sealed class Network
         }
 
         _hungerWeights = new double[_neuronCount];
-        for (int i = 0; i < _neuronCount; i++)
+        for (var i = 0; i < _neuronCount; i++)
         {
             _hungerWeights[i] = random.NextGaussian() * config.HungerWeightScale;
         }
 
         _thermalWeights = new double[_neuronCount];
-        for (int i = 0; i < _neuronCount; i++)
+        for (var i = 0; i < _neuronCount; i++)
         {
             _thermalWeights[i] = random.NextGaussian() * config.ThermalWeightScale;
         }
 
         _bias = new double[_neuronCount];
-        for (int i = 0; i < _neuronCount; i++)
+        for (var i = 0; i < _neuronCount; i++)
         {
             _bias[i] = random.NextGaussian() * config.BiasScale;
         }
@@ -107,6 +113,10 @@ public sealed class Network
         _previousActivations = new double[_neuronCount];
         _lastActivations = new double[_neuronCount];
     }
+
+    #endregion
+
+    #region Properties
 
     /// <summary>The number of interneurons.</summary>
     public int NeuronCount => _neuronCount;
@@ -141,6 +151,10 @@ public sealed class Network
     /// <summary>Read-only view of the fixed per-neuron biases. Do not mutate.</summary>
     public IReadOnlyList<double> Biases => _bias;
 
+    #endregion
+
+    #region Methods
+
     /// <summary>
     /// Computes this step's interneuron activations from the sensor vector and internal drives,
     /// using the current gains and recurrent state. Does not change any state.
@@ -156,25 +170,24 @@ public sealed class Network
         ArgumentNullException.ThrowIfNull(sensors);
         if (sensors.Length != _sensorCount)
         {
-            throw new ArgumentException(
-                $"Expected {_sensorCount} sensors but got {sensors.Length}.", nameof(sensors));
+            throw new ArgumentException($"Expected {_sensorCount} sensors but got {sensors.Length}.", nameof(sensors));
         }
 
         var activations = new double[_neuronCount];
-        for (int i = 0; i < _neuronCount; i++)
+        for (var i = 0; i < _neuronCount; i++)
         {
-            double u = _hungerWeights[i] * hunger * _config.HungerInputScale
+            var u = _hungerWeights[i] * hunger * _config.HungerInputScale
                 + _thermalWeights[i] * thermalDeviation * _config.ThermalInputScale
                 + _bias[i];
 
-            int inputRow = i * _sensorCount;
-            for (int j = 0; j < _sensorCount; j++)
+            var inputRow = i * _sensorCount;
+            for (var j = 0; j < _sensorCount; j++)
             {
                 u += _inputWeights[inputRow + j] * sensors[j];
             }
 
-            int recurrentRow = i * _neuronCount;
-            for (int j = 0; j < _neuronCount; j++)
+            var recurrentRow = i * _neuronCount;
+            for (var j = 0; j < _neuronCount; j++)
             {
                 u += _recurrentWeights[recurrentRow + j] * _previousActivations[j];
             }
@@ -204,21 +217,22 @@ public sealed class Network
         ArgumentNullException.ThrowIfNull(activations);
         if (activations.Length != _neuronCount)
         {
-            throw new ArgumentException(
-                $"Expected {_neuronCount} activations but got {activations.Length}.", nameof(activations));
+            throw new ArgumentException($"Expected {_neuronCount} activations but got {activations.Length}.", nameof(activations));
         }
 
-        for (int i = 0; i < _neuronCount; i++)
+        for (var i = 0; i < _neuronCount; i++)
         {
             _activityTrace[i] += _config.ActivityTraceRate * (Math.Abs(activations[i]) - _activityTrace[i]);
 
             if (homeostasisEnabled)
             {
-                double adjusted = _gain[i] + _config.GainAdaptRate * (_config.GainActivityTarget - _activityTrace[i]);
+                var adjusted = _gain[i] + _config.GainAdaptRate * (_config.GainActivityTarget - _activityTrace[i]);
                 _gain[i] = Math.Max(_config.GainMin, Math.Min(_config.GainMax, adjusted));
             }
         }
 
         Array.Copy(activations, _previousActivations, _neuronCount);
     }
+
+    #endregion
 }

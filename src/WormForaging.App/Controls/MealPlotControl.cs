@@ -35,6 +35,15 @@ public sealed class MealPlotControl : Control
     /// <summary>Floor for the y-axis maximum so a flat low series still renders.</summary>
     private const double MinimumYRange = 100.0;
 
+    /// <summary>Default plot background brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultBackgroundBrush = new SolidColorBrush(Color.Parse("#1f1f1c"));
+
+    /// <summary>Default text brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultTextBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
+
+    /// <summary>Default series-line brush (overridden by the theme).</summary>
+    private static readonly IBrush DefaultLineBrush = new SolidColorBrush(Color.Parse("#4fb88a"));
+
     /// <summary>
     /// Defines the <see cref="MealIntervals"/> property.
     /// </summary>
@@ -45,6 +54,24 @@ public sealed class MealPlotControl : Control
     /// </remarks>
     public static readonly StyledProperty<IReadOnlyList<long>?> MealIntervalsProperty =
         AvaloniaProperty.Register<MealPlotControl, IReadOnlyList<long>?>(nameof(MealIntervals));
+
+    /// <summary>
+    /// Defines the <see cref="BackgroundBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> BackgroundBrushProperty =
+        AvaloniaProperty.Register<MealPlotControl, IBrush?>(nameof(BackgroundBrush), DefaultBackgroundBrush);
+
+    /// <summary>
+    /// Defines the <see cref="TextBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> TextBrushProperty =
+        AvaloniaProperty.Register<MealPlotControl, IBrush?>(nameof(TextBrush), DefaultTextBrush);
+
+    /// <summary>
+    /// Defines the <see cref="LineBrush"/> property.
+    /// </summary>
+    public static readonly StyledProperty<IBrush?> LineBrushProperty =
+        AvaloniaProperty.Register<MealPlotControl, IBrush?>(nameof(LineBrush), DefaultLineBrush);
 
     #endregion
 
@@ -71,6 +98,33 @@ public sealed class MealPlotControl : Control
         set => SetValue(MealIntervalsProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the brush filling the plot background.
+    /// </summary>
+    public IBrush? BackgroundBrush
+    {
+        get => GetValue(BackgroundBrushProperty);
+        set => SetValue(BackgroundBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the title caption.
+    /// </summary>
+    public IBrush? TextBrush
+    {
+        get => GetValue(TextBrushProperty);
+        set => SetValue(TextBrushProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the brush of the series line.
+    /// </summary>
+    public IBrush? LineBrush
+    {
+        get => GetValue(LineBrushProperty);
+        set => SetValue(LineBrushProperty, value);
+    }
+
     #endregion
 
     #region Methods
@@ -79,7 +133,10 @@ public sealed class MealPlotControl : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == MealIntervalsProperty)
+        if (change.Property == MealIntervalsProperty
+            || change.Property == BackgroundBrushProperty
+            || change.Property == TextBrushProperty
+            || change.Property == LineBrushProperty)
         {
             InvalidateVisual();
         }
@@ -97,18 +154,23 @@ public sealed class MealPlotControl : Control
             return;
         }
 
-        context.FillRectangle(new SolidColorBrush(Color.Parse("#1f1f1c")), new Rect(0, 0, width, height));
-
-        var textBrush = new SolidColorBrush(Color.Parse("#9a9a92"));
+        if (BackgroundBrush is { } background)
+        {
+            context.FillRectangle(background, new Rect(0, 0, width, height));
+        }
 
         IReadOnlyList<long>? meals = MealIntervals;
         var recent = meals?.TakeLast(RecentMealCount).ToList();
         string title = recent is { Count: > 0 }
             ? $"steps per meal (max {Math.Max(MinimumYRange, recent.Max()):F0})"
             : "steps per meal";
-        context.DrawText(
-            new FormattedText(title, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, TitleFontSize, textBrush),
-            new Point(Padding, 2));
+
+        if (TextBrush is { } textBrush)
+        {
+            context.DrawText(
+                new FormattedText(title, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, Typeface.Default, TitleFontSize, textBrush),
+                new Point(Padding, 2));
+        }
 
         if (recent is not { Count: > 0 })
         {
@@ -125,10 +187,15 @@ public sealed class MealPlotControl : Control
             return;
         }
 
+        if (LineBrush is not { } lineBrush)
+        {
+            return;
+        }
+
         double maxValue = Math.Max(MinimumYRange, recent.Max());
         double denominator = Math.Max(recent.Count - 1, 1);
 
-        var pen = new Pen(new SolidColorBrush(Color.Parse("#4fb88a")), 2);
+        var pen = new Pen(lineBrush, 2);
         var geometry = new StreamGeometry();
         using (StreamGeometryContext ctx = geometry.Open())
         {

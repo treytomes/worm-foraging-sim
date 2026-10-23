@@ -48,6 +48,10 @@ public sealed class LearningRule
     private double _thermalBaseline;
     private double _thermalScale;
 
+    private double _lastModulator;
+    private double _lastFoodDrive;
+    private double _lastThermalDrive;
+
     /// <summary>Creates the learning rule with a zero eligibility trace and the configured initial
     /// reward-prediction state.</summary>
     /// <param name="config">The simulation constants.</param>
@@ -85,6 +89,27 @@ public sealed class LearningRule
 
     /// <summary>Running scale of the discomfort-change surprise (the prototype's <c>rt</c>).</summary>
     public double ThermalScale => _thermalScale;
+
+    /// <summary>
+    /// The broadcast modulator from the most recent <see cref="Modulator"/> call — the actual scalar
+    /// delivered to the readout this step (the reward in <see cref="LearningMode.Full"/>, the fixed
+    /// constant in <see cref="LearningMode.Hebbian"/>, zero in <see cref="LearningMode.Frozen"/>).
+    /// For display only; it never feeds back into the simulation.
+    /// </summary>
+    public double LastModulator => _lastModulator;
+
+    /// <summary>
+    /// The food (hunger) channel's contribution to the reward at the most recent <see cref="Modulator"/>
+    /// call: <c>(0.2 + hunger)·(odorSurprise + absorbed·50)</c>. Computed regardless of mode, so it
+    /// still reflects "how the foraging is going" even when the mode ignores it. Display only.
+    /// </summary>
+    public double LastFoodDrive => _lastFoodDrive;
+
+    /// <summary>
+    /// The thermal channel's contribution to the reward at the most recent <see cref="Modulator"/>
+    /// call: <c>(0.2 + 4·discomfort)·thermalSurprise</c>. Computed regardless of mode. Display only.
+    /// </summary>
+    public double LastThermalDrive => _lastThermalDrive;
 
     /// <summary>
     /// Decays the eligibility trace and accumulates the policy-gradient term for the chosen action:
@@ -169,16 +194,19 @@ public sealed class LearningRule
     {
         double hungerWeight = _config.HungerRewardWeightBase + hunger;
         double thermalWeight = _config.ThermalRewardWeightBase + _config.ThermalRewardWeightScale * discomfort;
-        double reward = hungerWeight * (odorSurprise + absorbed * _config.AbsorptionRewardScale)
-            + thermalWeight * thermalSurprise;
+        _lastFoodDrive = hungerWeight * (odorSurprise + absorbed * _config.AbsorptionRewardScale);
+        _lastThermalDrive = thermalWeight * thermalSurprise;
+        double reward = _lastFoodDrive + _lastThermalDrive;
 
-        return Mode switch
+        _lastModulator = Mode switch
         {
             LearningMode.Full => reward,
             LearningMode.Hebbian => _config.HebbianModulator,
             LearningMode.Frozen => 0.0,
             _ => 0.0,
         };
+
+        return _lastModulator;
     }
 
     /// <summary>
